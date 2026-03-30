@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conto Lavoro Laccatura</title>
+  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #243447;
+    }
+    header {
+      background: #1A5276;
+      color: white;
+      padding: 16px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    main {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: #111;
+      min-height: 240px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      box-sizing: border-box;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccd6dd;
+    }
+    button {
+      border: none;
+      background: #1A5276;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #687785;
+    }
+    button.success {
+      background: #27AE60;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row > * {
+      flex: 1;
+    }
+    .msg {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #eef4f8;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .small {
+      font-size: 13px;
+      color: #5f6f7c;
+    }
+  </style>
+</head>
+<body>
+  <header>Conto Lavoro Laccatura</header>
+
+  <main>
+    <div class="card">
+      <h2>Scanner</h2>
+      <video id="video" playsinline></video>
+      <div class="row">
+        <button id="startBtn">Avvia scansione</button>
+        <button id="stopBtn" class="secondary">Ferma</button>
+      </div>
+      <div class="small">Apri questa pagina direttamente da browser sul telefono.</div>
+      <div class="msg" id="cameraMsg">Fotocamera non avviata.</div>
+    </div>
+
+    <div class="card">
+      <h2>Operazione</h2>
+      <select id="azione">
+        <option value="registrazione">Registrazione</option>
+        <option value="prelievo">Prelievo</option>
+        <option value="ricezione">Ricezione</option>
+      </select>
+
+      <input id="odv" placeholder="Codice ODV">
+      <input id="cl" placeholder="Codice CL (solo registrazione)">
+      <input id="dataPrevista" type="date">
+
+      <button id="sendBtn" class="success">Invia</button>
+      <div class="msg" id="resultMsg">Nessuna operazione eseguita.</div>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxhG7eFPAvDaGmFky_mVDyVanW-2F20jvjftrNnytBjITw-s-yriYegDYc_kBNQT7sc/exec';
+
+    let codeReader = null;
+    let selectedDeviceId = null;
+    let scanning = false;
+
+    const video = document.getElementById('video');
+    const cameraMsg = document.getElementById('cameraMsg');
+    const resultMsg = document.getElementById('resultMsg');
+    const azione = document.getElementById('azione');
+    const odv = document.getElementById('odv');
+    const cl = document.getElementById('cl');
+    const dataPrevista = document.getElementById('dataPrevista');
+
+    azione.addEventListener('change', updateFields);
+    updateFields();
+
+    function updateFields() {
+      const val = azione.value;
+      cl.style.display = val === 'registrazione' ? 'block' : 'none';
+      dataPrevista.style.display = val === 'registrazione' ? 'block' : 'none';
+    }
+
+    function setCameraMsg(msg) {
+      cameraMsg.textContent = msg;
+    }
+
+    function setResultMsg(msg) {
+      resultMsg.textContent = msg;
+    }
+
+    async function startScan() {
+      try {
+        if (!window.isSecureContext) {
+          throw new Error('La pagina non è in HTTPS');
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia non supportato');
+        }
+
+        if (!codeReader) {
+          codeReader = new ZXing.BrowserMultiFormatReader();
+        }
+
+        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+        if (devices && devices.length) {
+          const backCam = devices.find(d =>
+            /back|rear|environment/gi.test(d.label || '')
+          );
+          selectedDeviceId = backCam ? backCam.deviceId : devices[0].deviceId;
+        }
+
+        scanning = true;
+        setCameraMsg('Fotocamera avviata. Inquadra il barcode.');
+
+        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+          if (!scanning) return;
+
+          if (result && result.text) {
+            const codice = result.text.trim();
+            onDetected(codice);
+          }
+        });
+
+      } catch (err) {
+        console.error(err);
+        setCameraMsg('Errore fotocamera: ' + (err.name ? err.name + ' - ' : '') + err.message);
+      }
+    }
+
+    function stopScan() {
+      scanning = false;
+      if (codeReader) {
+        try { codeReader.reset(); } catch (e) {}
+      }
+      setCameraMsg('Scansione fermata.');
+    }
+
+    function onDetected(codice) {
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      if (!odv.value) {
+        odv.value = codice;
+        setCameraMsg('ODV letto: ' + codice);
+        return;
+      }
+
+      if (azione.value === 'registrazione' && !cl.value) {
+        cl.value = codice;
+        setCameraMsg('CL letto: ' + codice);
+        stopScan();
+        return;
+      }
+
+      setCameraMsg('Codice letto: ' + codice);
+    }
+
+    async function callApi(payload) {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      return JSON.parse(text);
+    }
+
+    async function invia() {
+      try {
+        let payload;
+
+        if (azione.value === 'registrazione') {
+          if (!odv.value.trim() || !cl.value.trim() || !dataPrevista.value) {
+            setResultMsg('Compila ODV, CL e data prevista.');
+            return;
+          }
+
+          payload = {
+            action: 'registraODV',
+            codiceODV: odv.value.trim(),
+            codiceCL: cl.value.trim(),
+            dataConsegnaPrevista: dataPrevista.value
+          };
+        }
+
+        if (azione.value === 'prelievo') {
+          if (!odv.value.trim()) {
+            setResultMsg('Inserisci o scansiona un ODV.');
+            return;
+          }
+
+          payload = {
+            action: 'registraPrelievo',
+            codiceODV: odv.value.trim()
+          };
+        }
+
+        if (azione.value === 'ricezione') {
+          if (!odv.value.trim()) {
+            setResultMsg('Inserisci o scansiona un ODV.');
+            return;
+          }
+
+          payload = {
+            action: 'registraRicezione',
+            codiceODV: odv.value.trim()
+          };
+        }
+
+        setResultMsg('Invio in corso...');
+        const result = await callApi(payload);
+        setResultMsg(JSON.stringify(result, null, 2));
+
+        if (result.success) {
+          odv.value = '';
+          cl.value = '';
+          if (azione.value === 'registrazione') {
+            dataPrevista.value = '';
+          }
+        }
+
+      } catch (err) {
+        console.error(err);
+        setResultMsg('Errore chiamata API: ' + err.message);
+      }
+    }
+
+    document.getElementById('startBtn').addEventListener('click', startScan);
+    document.getElementById('stopBtn').addEventListener('click', stopScan);
+    document.getElementById('sendBtn').addEventListener('click', invia);
+  </script>
+</body>
+</html>
