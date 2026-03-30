@@ -2,293 +2,1284 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Conto Lavoro Laccatura</title>
+
   <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f5f7fa;
-      color: #243447;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1A5276;
+      --primary-light: #2980B9;
+      --primary-dark: #0E3A53;
+      --accent: #27AE60;
+      --accent-light: #2ECC71;
+      --warning: #F39C12;
+      --danger: #E74C3C;
+      --bg: #F0F4F8;
+      --card: #FFFFFF;
+      --text: #2C3E50;
+      --text-light: #7F8C8D;
+      --border: #DDE4EA;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    header {
-      background: #1A5276;
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
       color: white;
-      padding: 16px;
-      font-size: 20px;
-      font-weight: bold;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.15);
     }
-    main {
-      max-width: 520px;
+    .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .app-header .subtitle { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+
+    .app-content {
+      padding: 16px;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 16px;
+      padding-bottom: 100px;
     }
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
-    h2 {
-      margin-top: 0;
-      font-size: 18px;
-    }
-    video {
-      width: 100%;
-      border-radius: 12px;
-      background: #111;
-      min-height: 240px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      box-sizing: border-box;
-      font-size: 16px;
-      border-radius: 10px;
-      border: 1px solid #ccd6dd;
-    }
-    button {
-      border: none;
-      background: #1A5276;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button.secondary {
-      background: #687785;
-    }
-    button.success {
-      background: #27AE60;
-    }
-    .row {
+
+    .nav-tabs {
       display: flex;
-      gap: 10px;
+      gap: 6px;
+      margin-bottom: 20px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 5px;
+      box-shadow: var(--shadow);
     }
-    .row > * {
+    .nav-tab {
       flex: 1;
+      text-align: center;
+      padding: 12px 6px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+      background: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      -webkit-tap-highlight-color: transparent;
     }
-    .msg {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background: #eef4f8;
+    .nav-tab .tab-icon { font-size: 20px; line-height: 1; }
+    .nav-tab.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(26,82,118,0.3);
+    }
+    .nav-tab:not(.active):active { background: var(--bg); }
+
+    .phase-panel { display: none; animation: fadeIn 0.3s ease; }
+    .phase-panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
       font-size: 14px;
-      white-space: pre-wrap;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .small {
+    .card-title .icon { font-size: 18px; }
+
+    .scanner-area {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #1a1a2e;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .scanner-area video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scan-guide {
+      width: 75%;
+      height: 30%;
+      border: 2.5px solid rgba(255,255,255,0.7);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .scan-guide::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      height: 2px;
+      background: var(--danger);
+      opacity: 0.8;
+      animation: scanPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scanPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .scanner-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      gap: 8px;
+    }
+
+    .scanner-placeholder .icon { font-size: 40px; }
+
+    .field-group { margin-bottom: 14px; }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--bg);
+      transition: var(--transition);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .field-input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+    }
+
+    .field-input.scanned {
+      border-color: var(--accent);
+      background: #F0FFF4;
+    }
+
+    .field-input[readonly] { cursor: default; }
+
+    .scanned-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-left: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      box-shadow: 0 4px 12px rgba(26,82,118,0.3);
+    }
+
+    .btn-scan {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: white;
+      box-shadow: 0 4px 12px rgba(26,82,118,0.3);
+      padding: 14px;
+      font-size: 14px;
+    }
+
+    .btn-confirm {
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: white;
+      box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+      margin-top: 8px;
+    }
+
+    .btn-stop {
+      background: var(--danger);
+      color: white;
+      padding: 14px;
+      font-size: 14px;
+    }
+
+    .btn-reset {
+      background: none;
+      color: var(--text-light);
+      font-size: 14px;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      padding: 14px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      z-index: 200;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-width: 90%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--accent); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: var(--text); }
+    .toast.info { background: var(--primary-light); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+    }
+
+    .stat-card.aperti .stat-number { color: var(--warning); }
+    .stat-card.prelevati .stat-number { color: var(--primary-light); }
+    .stat-card.chiusi .stat-number { color: var(--accent); }
+
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-item:last-child { border-bottom: none; }
+
+    .log-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .log-dot.aperto { background: var(--warning); }
+    .log-dot.prelevato { background: var(--primary-light); }
+    .log-dot.chiuso { background: var(--accent); }
+
+    .log-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .log-codes {
       font-size: 13px;
-      color: #5f6f7c;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .log-date {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .log-stato {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .log-stato.aperto { background: #FFF3CD; color: #856404; }
+    .log-stato.prelevato { background: #CCE5FF; color: #004085; }
+    .log-stato.chiuso { background: #D4EDDA; color: #155724; }
+
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+
+    .step { display: flex; align-items: center; gap: 6px; }
+
+    .step-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      color: var(--text-light);
+      background: white;
+      transition: var(--transition);
+    }
+
+    .step-dot.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .step-dot.done {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    .step-line {
+      width: 40px;
+      height: 2px;
+      background: var(--border);
+      transition: var(--transition);
+    }
+
+    .step-line.done { background: var(--accent); }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .manual-toggle { text-align: center; margin-top: 8px; }
+
+    .manual-toggle button {
+      background: none;
+      border: none;
+      color: var(--primary-light);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <header>Conto Lavoro Laccatura</header>
 
-  <main>
-    <div class="card">
-      <h2>Scanner</h2>
-      <video id="video" playsinline></video>
-      <div class="row">
-        <button id="startBtn">Avvia scansione</button>
-        <button id="stopBtn" class="secondary">Ferma</button>
+  <div class="app-header">
+    <h1>&#128230; Conto Lavoro Laccatura</h1>
+    <div class="subtitle">Scanner &amp; Tracciamento</div>
+  </div>
+
+  <div class="app-content">
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchPhase('registrazione')" id="tab-registrazione">
+        <span class="tab-icon">&#128221;</span>
+        <span>Registra</span>
+      </button>
+      <button class="nav-tab" onclick="switchPhase('prelievo')" id="tab-prelievo">
+        <span class="tab-icon">&#128230;</span>
+        <span>Prelievo</span>
+      </button>
+      <button class="nav-tab" onclick="switchPhase('ricezione')" id="tab-ricezione">
+        <span class="tab-icon">&#9989;</span>
+        <span>Ricezione</span>
+      </button>
+      <button class="nav-tab" onclick="switchPhase('monitor')" id="tab-monitor">
+        <span class="tab-icon">&#128202;</span>
+        <span>Monitor</span>
+      </button>
+    </div>
+
+    <!-- FASE 1: REGISTRAZIONE -->
+    <div class="phase-panel active" id="panel-registrazione">
+      <div class="steps">
+        <div class="step"><div class="step-dot active" id="reg-step1">1</div></div>
+        <div class="step-line" id="reg-line1"></div>
+        <div class="step"><div class="step-dot" id="reg-step2">2</div></div>
+        <div class="step-line" id="reg-line2"></div>
+        <div class="step"><div class="step-dot" id="reg-step3">3</div></div>
       </div>
-      <div class="small">Apri questa pagina direttamente da browser sul telefono.</div>
-      <div class="msg" id="cameraMsg">Fotocamera non avviata.</div>
+
+      <div class="card" id="reg-scanner-card">
+        <div class="card-title">
+          <span class="icon">&#128247;</span>
+          <span id="reg-scanner-title">Scansiona ODV</span>
+        </div>
+        <div class="scanner-area">
+          <video id="reg-video" playsinline muted></video>
+          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-placeholder" id="reg-placeholder">
+            <span class="icon">&#128247;</span>
+            <span>Premi per attivare la fotocamera</span>
+          </div>
+        </div>
+        <button class="btn btn-scan" id="reg-scan-btn" onclick="startScan('registrazione')">
+          &#128247; Avvia Scansione
+        </button>
+        <div class="manual-toggle">
+          <button onclick="toggleManualInput('registrazione')">Inserimento manuale</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field-group">
+          <div class="field-label">
+            Codice ODV
+            <span class="scanned-badge" id="reg-odv-badge" style="display:none">&#9989; scansionato</span>
+          </div>
+          <input type="text" class="field-input" id="reg-odv" placeholder="Scansiona o digita il codice ODV" readonly>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">
+            Codice CL
+            <span class="scanned-badge" id="reg-cl-badge" style="display:none">&#9989; scansionato</span>
+          </div>
+          <input type="text" class="field-input" id="reg-cl" placeholder="Scansiona o digita il codice CL" readonly>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Data consegna prevista</div>
+          <input type="date" class="field-input" id="reg-data" disabled>
+        </div>
+
+        <button class="btn btn-confirm" id="reg-confirm-btn" onclick="confermaRegistrazione()" disabled>
+          &#10004; Conferma Registrazione
+        </button>
+        <button class="btn btn-reset" onclick="resetRegistrazione()">Resetta campi</button>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>Operazione</h2>
-      <select id="azione">
-        <option value="registrazione">Registrazione</option>
-        <option value="prelievo">Prelievo</option>
-        <option value="ricezione">Ricezione</option>
-      </select>
+    <!-- FASE 2: PRELIEVO -->
+    <div class="phase-panel" id="panel-prelievo">
+      <div class="card" id="prel-scanner-card">
+        <div class="card-title">
+          <span class="icon">&#128247;</span>
+          <span>Scansiona ODV per prelievo</span>
+        </div>
+        <div class="scanner-area">
+          <video id="prel-video" playsinline muted></video>
+          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-placeholder" id="prel-placeholder">
+            <span class="icon">&#128230;</span>
+            <span>Scansiona ODV dal carrello</span>
+          </div>
+        </div>
+        <button class="btn btn-scan" id="prel-scan-btn" onclick="startScan('prelievo')">
+          &#128247; Avvia Scansione
+        </button>
+        <div class="manual-toggle">
+          <button onclick="toggleManualInput('prelievo')">Inserimento manuale</button>
+        </div>
+      </div>
 
-      <input id="odv" placeholder="Codice ODV">
-      <input id="cl" placeholder="Codice CL (solo registrazione)">
-      <input id="dataPrevista" type="date">
+      <div class="card">
+        <div class="field-group">
+          <div class="field-label">Codice ODV</div>
+          <input type="text" class="field-input" id="prel-odv" placeholder="Scansiona il codice ODV" readonly>
+        </div>
+        <button class="btn btn-confirm" id="prel-confirm-btn" onclick="confermaPrelievo()" disabled>
+          &#128230; Conferma Prelievo
+        </button>
+        <button class="btn btn-reset" onclick="resetPrelievo()">Resetta</button>
+      </div>
 
-      <button id="sendBtn" class="success">Invia</button>
-      <div class="msg" id="resultMsg">Nessuna operazione eseguita.</div>
+      <div class="card" id="prel-log-card" style="display:none">
+        <div class="card-title">
+          <span class="icon">&#128203;</span>
+          <span>Prelievi di questa sessione</span>
+        </div>
+        <div id="prel-session-log"></div>
+      </div>
     </div>
-  </main>
+
+    <!-- FASE 3: RICEZIONE -->
+    <div class="phase-panel" id="panel-ricezione">
+      <div class="card" id="ric-scanner-card">
+        <div class="card-title">
+          <span class="icon">&#128247;</span>
+          <span>Scansiona ODV per ricezione</span>
+        </div>
+        <div class="scanner-area">
+          <video id="ric-video" playsinline muted></video>
+          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-placeholder" id="ric-placeholder">
+            <span class="icon">&#9989;</span>
+            <span>Scansiona ODV dal carrello rientrato</span>
+          </div>
+        </div>
+        <button class="btn btn-scan" id="ric-scan-btn" onclick="startScan('ricezione')">
+          &#128247; Avvia Scansione
+        </button>
+        <div class="manual-toggle">
+          <button onclick="toggleManualInput('ricezione')">Inserimento manuale</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field-group">
+          <div class="field-label">Codice ODV</div>
+          <input type="text" class="field-input" id="ric-odv" placeholder="Scansiona il codice ODV" readonly>
+        </div>
+        <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione()" disabled>
+          &#9989; Conferma Ricezione
+        </button>
+        <button class="btn btn-reset" onclick="resetRicezione()">Resetta</button>
+      </div>
+
+      <div class="card" id="ric-log-card" style="display:none">
+        <div class="card-title">
+          <span class="icon">&#128203;</span>
+          <span>Ricezioni di questa sessione</span>
+        </div>
+        <div id="ric-session-log"></div>
+      </div>
+    </div>
+
+    <!-- MONITOR -->
+    <div class="phase-panel" id="panel-monitor">
+      <div class="stats-row">
+        <div class="stat-card aperti">
+          <div class="stat-number" id="stat-aperti">-</div>
+          <div class="stat-label">Aperti</div>
+        </div>
+        <div class="stat-card prelevati">
+          <div class="stat-number" id="stat-prelevati">-</div>
+          <div class="stat-label">Prelevati</div>
+        </div>
+        <div class="stat-card chiusi">
+          <div class="stat-number" id="stat-chiusi">-</div>
+          <div class="stat-label">Chiusi</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">&#128203;</span>
+          <span>Ultime attivit&agrave;</span>
+        </div>
+        <div id="activity-log">
+          <div style="text-align:center; color:var(--text-light); padding:20px; font-size:14px;">
+            Caricamento...
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="aggiornaMonitor()" style="margin-top:8px">
+        &#128260; Aggiorna Dati
+      </button>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxhG7eFPAvDaGmFky_mVDyVanW-2F20jvjftrNnytBjITw-s-yriYegDYc_kBNQT7sc/exec';
+    const API_URL = 'YOUR_APPS_SCRIPT_WEBAPP_URL';
 
-    let codeReader = null;
-    let selectedDeviceId = null;
-    let scanning = false;
+    const state = {
+      currentPhase: 'registrazione',
+      regStep: 1,
+      scanning: false,
+      activePhase: null,
+      codeReader: null,
+      currentControls: null,
+      prelieviSessione: [],
+      ricezioniSessione: [],
+      manualMode: {
+        registrazione: false,
+        prelievo: false,
+        ricezione: false
+      }
+    };
 
-    const video = document.getElementById('video');
-    const cameraMsg = document.getElementById('cameraMsg');
-    const resultMsg = document.getElementById('resultMsg');
-    const azione = document.getElementById('azione');
-    const odv = document.getElementById('odv');
-    const cl = document.getElementById('cl');
-    const dataPrevista = document.getElementById('dataPrevista');
+    const videoMap = {
+      registrazione: 'reg-video',
+      prelievo: 'prel-video',
+      ricezione: 'ric-video'
+    };
 
-    azione.addEventListener('change', updateFields);
-    updateFields();
+    const placeholderMap = {
+      registrazione: 'reg-placeholder',
+      prelievo: 'prel-placeholder',
+      ricezione: 'ric-placeholder'
+    };
 
-    function updateFields() {
-      const val = azione.value;
-      cl.style.display = val === 'registrazione' ? 'block' : 'none';
-      dataPrevista.style.display = val === 'registrazione' ? 'block' : 'none';
+    const buttonMap = {
+      registrazione: 'reg-scan-btn',
+      prelievo: 'prel-scan-btn',
+      ricezione: 'ric-scan-btn'
+    };
+
+    function switchPhase(phase) {
+      stopScan();
+      state.currentPhase = phase;
+
+      document.querySelectorAll('.nav-tab').forEach(function(tab) {
+        tab.classList.remove('active');
+      });
+      document.getElementById('tab-' + phase).classList.add('active');
+
+      document.querySelectorAll('.phase-panel').forEach(function(panel) {
+        panel.classList.remove('active');
+      });
+      document.getElementById('panel-' + phase).classList.add('active');
+
+      if (phase === 'monitor') {
+        aggiornaMonitor();
+      }
     }
 
-    function setCameraMsg(msg) {
-      cameraMsg.textContent = msg;
-    }
+    async function apiCall(action, payload) {
+      const body = Object.assign({ action: action }, payload || {});
 
-    function setResultMsg(msg) {
-      resultMsg.textContent = msg;
-    }
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(body)
+      });
 
-    async function startScan() {
+      const text = await response.text();
+
       try {
-        if (!window.isSecureContext) {
-          throw new Error('La pagina non è in HTTPS');
-        }
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('getUserMedia non supportato');
-        }
-
-        if (!codeReader) {
-          codeReader = new ZXing.BrowserMultiFormatReader();
-        }
-
-        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-        if (devices && devices.length) {
-          const backCam = devices.find(d =>
-            /back|rear|environment/gi.test(d.label || '')
-          );
-          selectedDeviceId = backCam ? backCam.deviceId : devices[0].deviceId;
-        }
-
-        scanning = true;
-        setCameraMsg('Fotocamera avviata. Inquadra il barcode.');
-
-        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-          if (!scanning) return;
-
-          if (result && result.text) {
-            const codice = result.text.trim();
-            onDetected(codice);
-          }
-        });
-
-      } catch (err) {
-        console.error(err);
-        setCameraMsg('Errore fotocamera: ' + (err.name ? err.name + ' - ' : '') + err.message);
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error('Risposta backend non valida: ' + text);
       }
     }
 
-    function stopScan() {
-      scanning = false;
-      if (codeReader) {
-        try { codeReader.reset(); } catch (e) {}
-      }
-      setCameraMsg('Scansione fermata.');
+    function getScanControls(phase) {
+      return {
+        video: document.getElementById(videoMap[phase]),
+        placeholder: document.getElementById(placeholderMap[phase]),
+        button: document.getElementById(buttonMap[phase])
+      };
     }
 
-    function onDetected(codice) {
-      if (navigator.vibrate) navigator.vibrate(100);
-
-      if (!odv.value) {
-        odv.value = codice;
-        setCameraMsg('ODV letto: ' + codice);
-        return;
-      }
-
-      if (azione.value === 'registrazione' && !cl.value) {
-        cl.value = codice;
-        setCameraMsg('CL letto: ' + codice);
+    async function startScan(phase) {
+      if (state.scanning) {
         stopScan();
         return;
       }
 
-      setCameraMsg('Codice letto: ' + codice);
-    }
+      if (!window.isSecureContext) {
+        showToast('La pagina deve essere aperta in HTTPS', 'error');
+        return;
+      }
 
-    async function callApi(payload) {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('Fotocamera non supportata da questo browser', 'error');
+        return;
+      }
 
-      const text = await res.text();
-      return JSON.parse(text);
-    }
+      if (!window.ZXing) {
+        showToast('Libreria scanner non caricata', 'error');
+        return;
+      }
 
-    async function invia() {
       try {
-        let payload;
+        const controls = getScanControls(phase);
 
-        if (azione.value === 'registrazione') {
-          if (!odv.value.trim() || !cl.value.trim() || !dataPrevista.value) {
-            setResultMsg('Compila ODV, CL e data prevista.');
-            return;
-          }
+        state.scanning = true;
+        state.activePhase = phase;
+        state.currentControls = controls;
 
-          payload = {
-            action: 'registraODV',
-            codiceODV: odv.value.trim(),
-            codiceCL: cl.value.trim(),
-            dataConsegnaPrevista: dataPrevista.value
-          };
+        controls.placeholder.style.display = 'none';
+        controls.button.innerHTML = '&#9724; Ferma Scansione';
+        controls.button.className = 'btn btn-stop';
+
+        if (!state.codeReader) {
+          state.codeReader = new ZXing.BrowserMultiFormatReader();
         }
 
-        if (azione.value === 'prelievo') {
-          if (!odv.value.trim()) {
-            setResultMsg('Inserisci o scansiona un ODV.');
-            return;
+        const constraints = {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        };
+
+        await navigator.mediaDevices.getUserMedia(constraints)
+          .then(function(stream) {
+            stream.getTracks().forEach(function(track) { track.stop(); });
+          });
+
+        state.codeReader.decodeFromConstraints(
+          constraints,
+          controls.video,
+          function(result, err) {
+            if (!state.scanning || state.activePhase !== phase) return;
+
+            if (result && result.text) {
+              onBarcodeDetected(result.text, phase);
+            }
           }
-
-          payload = {
-            action: 'registraPrelievo',
-            codiceODV: odv.value.trim()
-          };
-        }
-
-        if (azione.value === 'ricezione') {
-          if (!odv.value.trim()) {
-            setResultMsg('Inserisci o scansiona un ODV.');
-            return;
-          }
-
-          payload = {
-            action: 'registraRicezione',
-            codiceODV: odv.value.trim()
-          };
-        }
-
-        setResultMsg('Invio in corso...');
-        const result = await callApi(payload);
-        setResultMsg(JSON.stringify(result, null, 2));
-
-        if (result.success) {
-          odv.value = '';
-          cl.value = '';
-          if (azione.value === 'registrazione') {
-            dataPrevista.value = '';
-          }
-        }
+        );
 
       } catch (err) {
         console.error(err);
-        setResultMsg('Errore chiamata API: ' + err.message);
+        stopScan();
+
+        let msg = 'Errore fotocamera';
+        if (err && err.name === 'NotAllowedError') {
+          msg = 'Permesso fotocamera negato';
+        } else if (err && err.name === 'NotFoundError') {
+          msg = 'Nessuna fotocamera trovata';
+        } else if (err && err.name === 'NotReadableError') {
+          msg = 'Fotocamera occupata da un’altra app';
+        } else if (err && err.message) {
+          msg = err.message;
+        }
+
+        showToast(msg, 'error');
       }
     }
 
-    document.getElementById('startBtn').addEventListener('click', startScan);
-    document.getElementById('stopBtn').addEventListener('click', stopScan);
-    document.getElementById('sendBtn').addEventListener('click', invia);
+    function stopScan() {
+      state.scanning = false;
+      state.activePhase = null;
+
+      if (state.codeReader) {
+        try {
+          state.codeReader.reset();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      ['registrazione', 'prelievo', 'ricezione'].forEach(function(phase) {
+        const controls = getScanControls(phase);
+        if (controls.video) {
+          controls.video.pause();
+          controls.video.srcObject = null;
+        }
+        if (controls.placeholder) {
+          controls.placeholder.style.display = '';
+        }
+        if (controls.button) {
+          controls.button.innerHTML = '&#128247; Avvia Scansione';
+          controls.button.className = 'btn btn-scan';
+        }
+      });
+    }
+
+    function onBarcodeDetected(code, phase) {
+      const cleanCode = String(code || '').trim();
+      if (!cleanCode) return;
+
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      switch (phase) {
+        case 'registrazione':
+          handleRegScan(cleanCode);
+          break;
+
+        case 'prelievo':
+          stopScan();
+          document.getElementById('prel-odv').value = cleanCode;
+          document.getElementById('prel-odv').classList.add('scanned');
+          document.getElementById('prel-confirm-btn').disabled = false;
+          showToast('ODV scansionato: ' + cleanCode, 'success');
+          break;
+
+        case 'ricezione':
+          stopScan();
+          document.getElementById('ric-odv').value = cleanCode;
+          document.getElementById('ric-odv').classList.add('scanned');
+          document.getElementById('ric-confirm-btn').disabled = false;
+          showToast('ODV scansionato: ' + cleanCode, 'success');
+          break;
+      }
+    }
+
+    // === FASE 1 ===
+    function handleRegScan(code) {
+      if (state.regStep === 1) {
+        document.getElementById('reg-odv').value = code;
+        document.getElementById('reg-odv').classList.add('scanned');
+        document.getElementById('reg-odv-badge').style.display = 'inline-flex';
+        state.regStep = 2;
+        updateRegSteps();
+        document.getElementById('reg-scanner-title').textContent = 'Scansiona CL';
+        showToast('ODV scansionato! Ora scansiona il CL', 'info');
+        return;
+      }
+
+      if (state.regStep === 2) {
+        document.getElementById('reg-cl').value = code;
+        document.getElementById('reg-cl').classList.add('scanned');
+        document.getElementById('reg-cl-badge').style.display = 'inline-flex';
+        state.regStep = 3;
+        updateRegSteps();
+        stopScan();
+        document.getElementById('reg-scanner-title').textContent = 'Scansione completata';
+        document.getElementById('reg-data').disabled = false;
+        document.getElementById('reg-data').focus();
+        showToast('CL scansionato! Inserisci la data di consegna prevista', 'success');
+      }
+    }
+
+    function updateRegSteps() {
+      const s = state.regStep;
+
+      document.getElementById('reg-step1').className = 'step-dot ' + (s > 1 ? 'done' : 'active');
+      document.getElementById('reg-step1').innerHTML = s > 1 ? '&#10003;' : '1';
+
+      document.getElementById('reg-step2').className = 'step-dot ' + (s > 2 ? 'done' : (s === 2 ? 'active' : ''));
+      document.getElementById('reg-step2').innerHTML = s > 2 ? '&#10003;' : '2';
+
+      document.getElementById('reg-step3').className = 'step-dot ' + (s === 3 ? 'active' : '');
+
+      document.getElementById('reg-line1').className = 'step-line' + (s > 1 ? ' done' : '');
+      document.getElementById('reg-line2').className = 'step-line' + (s > 2 ? ' done' : '');
+    }
+
+    function checkRegReady() {
+      const odv = document.getElementById('reg-odv').value.trim();
+      const cl = document.getElementById('reg-cl').value.trim();
+      const data = document.getElementById('reg-data').value;
+      document.getElementById('reg-confirm-btn').disabled = !(odv && cl && data);
+    }
+
+    async function confermaRegistrazione() {
+      const odv = document.getElementById('reg-odv').value.trim();
+      const cl = document.getElementById('reg-cl').value.trim();
+      const data = document.getElementById('reg-data').value;
+
+      if (!odv || !cl || !data) {
+        showToast('Compila tutti i campi', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('reg-confirm-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
+
+      try {
+        const result = await apiCall('registraODV', {
+          codiceODV: odv,
+          codiceCL: cl,
+          dataConsegnaPrevista: data
+        });
+
+        if (result.success) {
+          showToast('Registrato: ' + odv + ' \u2194 ' + cl, 'success');
+          resetRegistrazione();
+        } else {
+          showToast(result.message || 'Errore in registrazione', result.type === 'duplicate' ? 'warning' : 'error');
+          btn.disabled = false;
+          btn.innerHTML = '&#10004; Conferma Registrazione';
+        }
+      } catch (err) {
+        showToast('Errore di connessione: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '&#10004; Conferma Registrazione';
+      }
+    }
+
+    function resetRegistrazione() {
+      stopScan();
+      state.regStep = 1;
+      updateRegSteps();
+
+      document.getElementById('reg-odv').value = '';
+      document.getElementById('reg-cl').value = '';
+      document.getElementById('reg-data').value = '';
+
+      document.getElementById('reg-odv').classList.remove('scanned');
+      document.getElementById('reg-cl').classList.remove('scanned');
+
+      document.getElementById('reg-odv-badge').style.display = 'none';
+      document.getElementById('reg-cl-badge').style.display = 'none';
+
+      document.getElementById('reg-data').disabled = true;
+      document.getElementById('reg-confirm-btn').disabled = true;
+      document.getElementById('reg-confirm-btn').innerHTML = '&#10004; Conferma Registrazione';
+      document.getElementById('reg-scanner-title').textContent = 'Scansiona ODV';
+
+      if (state.manualMode.registrazione) {
+        toggleManualInput('registrazione');
+      }
+    }
+
+    // === FASE 2 ===
+    async function confermaPrelievo() {
+      const odv = document.getElementById('prel-odv').value.trim();
+
+      if (!odv) {
+        showToast('Scansiona prima un ODV', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('prel-confirm-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
+
+      try {
+        const result = await apiCall('registraPrelievo', {
+          codiceODV: odv
+        });
+
+        if (result.success) {
+          showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
+          state.prelieviSessione.unshift({
+            odv: odv,
+            cl: result.data.cl,
+            ora: result.data.dataPrelievo
+          });
+          updateSessionLog('prel');
+          resetPrelievo();
+        } else {
+          showToast(result.message || 'Errore nel prelievo', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '&#128230; Conferma Prelievo';
+        }
+      } catch (err) {
+        showToast('Errore: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '&#128230; Conferma Prelievo';
+      }
+    }
+
+    function resetPrelievo() {
+      stopScan();
+      document.getElementById('prel-odv').value = '';
+      document.getElementById('prel-odv').classList.remove('scanned');
+      document.getElementById('prel-confirm-btn').disabled = true;
+      document.getElementById('prel-confirm-btn').innerHTML = '&#128230; Conferma Prelievo';
+
+      if (state.manualMode.prelievo) {
+        toggleManualInput('prelievo');
+      }
+    }
+
+    // === FASE 3 ===
+    async function confermaRicezione() {
+      const odv = document.getElementById('ric-odv').value.trim();
+
+      if (!odv) {
+        showToast('Scansiona prima un ODV', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('ric-confirm-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
+
+      try {
+        const result = await apiCall('registraRicezione', {
+          codiceODV: odv
+        });
+
+        if (result.success) {
+          showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
+          state.ricezioniSessione.unshift({
+            odv: odv,
+            cl: result.data.cl,
+            ora: result.data.dataRicezione
+          });
+          updateSessionLog('ric');
+          resetRicezione();
+        } else {
+          showToast(result.message || 'Errore nella ricezione', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '&#9989; Conferma Ricezione';
+        }
+      } catch (err) {
+        showToast('Errore: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '&#9989; Conferma Ricezione';
+      }
+    }
+
+    function resetRicezione() {
+      stopScan();
+      document.getElementById('ric-odv').value = '';
+      document.getElementById('ric-odv').classList.remove('scanned');
+      document.getElementById('ric-confirm-btn').disabled = true;
+      document.getElementById('ric-confirm-btn').innerHTML = '&#9989; Conferma Ricezione';
+
+      if (state.manualMode.ricezione) {
+        toggleManualInput('ricezione');
+      }
+    }
+
+    // === SESSION LOGS ===
+    function updateSessionLog(prefix) {
+      const items = prefix === 'prel' ? state.prelieviSessione : state.ricezioniSessione;
+      const container = document.getElementById(prefix + '-session-log');
+      const card = document.getElementById(prefix + '-log-card');
+
+      if (items.length === 0) {
+        card.style.display = 'none';
+        return;
+      }
+
+      card.style.display = 'block';
+
+      let html = '';
+      items.forEach(function(item) {
+        const dotClass = prefix === 'prel' ? 'prelevato' : 'chiuso';
+        html += '<div class="log-item">';
+        html += '<div class="log-dot ' + dotClass + '"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv) + ' &rarr; CL: ' + escapeHtml(item.cl) + '</div>';
+        html += '<div class="log-date">' + escapeHtml(item.ora) + '</div>';
+        html += '</div></div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    // === MONITOR ===
+    async function aggiornaMonitor() {
+      try {
+        const statsResponse = await apiCall('getStats');
+        const stats = statsResponse.data || statsResponse;
+
+        document.getElementById('stat-aperti').textContent = stats.aperti ?? 0;
+        document.getElementById('stat-prelevati').textContent = stats.prelevati ?? 0;
+        document.getElementById('stat-chiusi').textContent = stats.chiusi ?? 0;
+      } catch (err) {
+        console.error(err);
+      }
+
+      try {
+        const itemsResponse = await apiCall('getUltimeRegistrazioni', { n: 15 });
+        const items = itemsResponse.data || [];
+
+        const container = document.getElementById('activity-log');
+        if (!items || items.length === 0) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessuna registrazione</div>';
+          return;
+        }
+
+        let html = '';
+        items.forEach(function(item) {
+          const statoClass = String(item.stato || '').toLowerCase();
+          html += '<div class="log-item">';
+          html += '<div class="log-dot ' + statoClass + '"></div>';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Consegna prevista: ' + escapeHtml(item.dataConsegnaPrevista || '') + '</div>';
+          html += '</div>';
+          html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
+          html += '</div>';
+        });
+
+        container.innerHTML = html;
+      } catch (err) {
+        document.getElementById('activity-log').innerHTML =
+          '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento monitor</div>';
+      }
+    }
+
+    // === MANUAL INPUT ===
+    function toggleManualInput(phase) {
+      const isManual = !state.manualMode[phase];
+      state.manualMode[phase] = isManual;
+
+      if (phase === 'registrazione') {
+        document.getElementById('reg-odv').readOnly = !isManual;
+        document.getElementById('reg-cl').readOnly = !isManual;
+
+        if (isManual) {
+          stopScan();
+          document.getElementById('reg-scanner-card').style.display = 'none';
+          document.getElementById('reg-odv').placeholder = 'Digita il codice ODV';
+          document.getElementById('reg-cl').placeholder = 'Digita il codice CL';
+          document.getElementById('reg-data').disabled = false;
+        } else {
+          document.getElementById('reg-scanner-card').style.display = '';
+          document.getElementById('reg-odv').placeholder = 'Scansiona o digita il codice ODV';
+          document.getElementById('reg-cl').placeholder = 'Scansiona o digita il codice CL';
+          document.getElementById('reg-odv').readOnly = true;
+          document.getElementById('reg-cl').readOnly = true;
+        }
+
+        checkRegReady();
+        return;
+      }
+
+      if (phase === 'prelievo') {
+        document.getElementById('prel-odv').readOnly = !isManual;
+
+        if (isManual) {
+          stopScan();
+          document.getElementById('prel-scanner-card').style.display = 'none';
+          document.getElementById('prel-odv').placeholder = 'Digita il codice ODV';
+        } else {
+          document.getElementById('prel-scanner-card').style.display = '';
+          document.getElementById('prel-odv').placeholder = 'Scansiona il codice ODV';
+          document.getElementById('prel-odv').readOnly = true;
+        }
+
+        document.getElementById('prel-confirm-btn').disabled = !document.getElementById('prel-odv').value.trim();
+        return;
+      }
+
+      if (phase === 'ricezione') {
+        document.getElementById('ric-odv').readOnly = !isManual;
+
+        if (isManual) {
+          stopScan();
+          document.getElementById('ric-scanner-card').style.display = 'none';
+          document.getElementById('ric-odv').placeholder = 'Digita il codice ODV';
+        } else {
+          document.getElementById('ric-scanner-card').style.display = '';
+          document.getElementById('ric-odv').placeholder = 'Scansiona il codice ODV';
+          document.getElementById('ric-odv').readOnly = true;
+        }
+
+        document.getElementById('ric-confirm-btn').disabled = !document.getElementById('ric-odv').value.trim();
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    // === TOAST ===
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + (type || 'info');
+      toast.offsetHeight;
+      toast.classList.add('show');
+      setTimeout(function() {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      updateRegSteps();
+
+      document.getElementById('reg-data').addEventListener('change', checkRegReady);
+      document.getElementById('reg-odv').addEventListener('input', checkRegReady);
+      document.getElementById('reg-cl').addEventListener('input', checkRegReady);
+
+      document.getElementById('prel-odv').addEventListener('input', function() {
+        document.getElementById('prel-confirm-btn').disabled = !this.value.trim();
+      });
+
+      document.getElementById('ric-odv').addEventListener('input', function() {
+        document.getElementById('ric-confirm-btn').disabled = !this.value.trim();
+      });
+    });
   </script>
 </body>
 </html>
