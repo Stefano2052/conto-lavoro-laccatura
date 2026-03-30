@@ -557,6 +557,14 @@
 
     <!-- FASE 2: PRELIEVO -->
     <div class="phase-panel" id="panel-prelievo">
+      <div class="steps">
+        <div class="step"><div class="step-dot done">&#10003;</div></div>
+        <div class="step-line done"></div>
+        <div class="step"><div class="step-dot active">2</div></div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot">3</div></div>
+      </div>
+
       <div class="card" id="prel-scanner-card">
         <div class="card-title">
           <span class="icon">&#128247;</span>
@@ -600,6 +608,14 @@
 
     <!-- FASE 3: RICEZIONE -->
     <div class="phase-panel" id="panel-ricezione">
+      <div class="steps">
+        <div class="step"><div class="step-dot done">&#10003;</div></div>
+        <div class="step-line done"></div>
+        <div class="step"><div class="step-dot done">&#10003;</div></div>
+        <div class="step-line done"></div>
+        <div class="step"><div class="step-dot active">3</div></div>
+      </div>
+
       <div class="card" id="ric-scanner-card">
         <div class="card-title">
           <span class="icon">&#128247;</span>
@@ -901,7 +917,6 @@
       }
     }
 
-    // === FASE 1 ===
     function handleRegScan(code) {
       if (state.regStep === 1) {
         document.getElementById('reg-odv').value = code;
@@ -938,6 +953,7 @@
       document.getElementById('reg-step2').innerHTML = s > 2 ? '&#10003;' : '2';
 
       document.getElementById('reg-step3').className = 'step-dot ' + (s === 3 ? 'active' : '');
+      document.getElementById('reg-step3').innerHTML = '3';
 
       document.getElementById('reg-line1').className = 'step-line' + (s > 1 ? ' done' : '');
       document.getElementById('reg-line2').className = 'step-line' + (s > 2 ? ' done' : '');
@@ -1011,7 +1027,6 @@
       }
     }
 
-    // === FASE 2 ===
     async function confermaPrelievo() {
       const odv = document.getElementById('prel-odv').value.trim();
 
@@ -1062,7 +1077,6 @@
       }
     }
 
-    // === FASE 3 ===
     async function confermaRicezione() {
       const odv = document.getElementById('ric-odv').value.trim();
 
@@ -1113,7 +1127,6 @@
       }
     }
 
-    // === SESSION LOGS ===
     function updateSessionLog(prefix) {
       const items = prefix === 'prel' ? state.prelieviSessione : state.ricezioniSessione;
       const container = document.getElementById(prefix + '-session-log');
@@ -1140,7 +1153,6 @@
       container.innerHTML = html;
     }
 
-    // === MONITOR ===
     async function aggiornaMonitor() {
       try {
         const statsResponse = await apiCall('getStats');
@@ -1183,7 +1195,6 @@
       }
     }
 
-    // === MANUAL INPUT ===
     function toggleManualInput(phase) {
       const isManual = !state.manualMode[phase];
       state.manualMode[phase] = isManual;
@@ -1253,7 +1264,6 @@
         .replaceAll("'", '&#39;');
     }
 
-    // === TOAST ===
     function showToast(message, type) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
