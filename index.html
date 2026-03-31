@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Conto Lavoro Laccatura</title>
 
-  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <script src="https://unpkg.com/@AUO/zxing-library@0.21.3/umd/index.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -367,10 +367,7 @@
     .log-dot.prelevato { background: var(--primary-light); }
     .log-dot.chiuso { background: var(--accent); }
 
-    .log-info {
-      flex: 1;
-      min-width: 0;
-    }
+    .log-info { flex: 1; min-width: 0; }
 
     .log-codes {
       font-size: 13px;
@@ -421,48 +418,26 @@
       transition: var(--transition);
     }
 
-    .step-dot.active {
-      border-color: var(--primary);
-      background: var(--primary);
-      color: white;
-    }
-
-    .step-dot.done {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: white;
-    }
-
-    .step-line {
-      width: 40px;
-      height: 2px;
-      background: var(--border);
-      transition: var(--transition);
-    }
-
+    .step-dot.active { border-color: var(--primary); background: var(--primary); color: white; }
+    .step-dot.done { border-color: var(--accent); background: var(--accent); color: white; }
+    .step-line { width: 40px; height: 2px; background: var(--border); transition: var(--transition); }
     .step-line.done { background: var(--accent); }
 
     .spinner {
-      width: 20px;
-      height: 20px;
+      width: 20px; height: 20px;
       border: 3px solid rgba(255,255,255,0.3);
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .manual-toggle { text-align: center; margin-top: 8px; }
-
     .manual-toggle button {
-      background: none;
-      border: none;
+      background: none; border: none;
       color: var(--primary-light);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; padding: 8px;
       text-decoration: underline;
     }
   </style>
@@ -534,7 +509,6 @@
           </div>
           <input type="text" class="field-input" id="reg-odv" placeholder="Scansiona o digita il codice ODV" readonly>
         </div>
-
         <div class="field-group">
           <div class="field-label">
             Codice CL
@@ -542,12 +516,10 @@
           </div>
           <input type="text" class="field-input" id="reg-cl" placeholder="Scansiona o digita il codice CL" readonly>
         </div>
-
         <div class="field-group">
           <div class="field-label">Data consegna prevista</div>
           <input type="date" class="field-input" id="reg-data" disabled>
         </div>
-
         <button class="btn btn-confirm" id="reg-confirm-btn" onclick="confermaRegistrazione()" disabled>
           &#10004; Conferma Registrazione
         </button>
@@ -557,14 +529,6 @@
 
     <!-- FASE 2: PRELIEVO -->
     <div class="phase-panel" id="panel-prelievo">
-      <div class="steps">
-        <div class="step"><div class="step-dot done">&#10003;</div></div>
-        <div class="step-line done"></div>
-        <div class="step"><div class="step-dot active">2</div></div>
-        <div class="step-line"></div>
-        <div class="step"><div class="step-dot">3</div></div>
-      </div>
-
       <div class="card" id="prel-scanner-card">
         <div class="card-title">
           <span class="icon">&#128247;</span>
@@ -608,14 +572,6 @@
 
     <!-- FASE 3: RICEZIONE -->
     <div class="phase-panel" id="panel-ricezione">
-      <div class="steps">
-        <div class="step"><div class="step-dot done">&#10003;</div></div>
-        <div class="step-line done"></div>
-        <div class="step"><div class="step-dot done">&#10003;</div></div>
-        <div class="step-line done"></div>
-        <div class="step"><div class="step-dot active">3</div></div>
-      </div>
-
       <div class="card" id="ric-scanner-card">
         <div class="card-title">
           <span class="icon">&#128247;</span>
@@ -696,6 +652,9 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // ================================================
+    // CONFIGURAZIONE
+    // ================================================
     const API_URL = 'https://script.google.com/macros/s/AKfycbxhG7eFPAvDaGmFky_mVDyVanW-2F20jvjftrNnytBjITw-s-yriYegDYc_kBNQT7sc/exec';
 
     const state = {
@@ -704,73 +663,46 @@
       scanning: false,
       activePhase: null,
       codeReader: null,
-      currentControls: null,
       prelieviSessione: [],
       ricezioniSessione: [],
-      manualMode: {
-        registrazione: false,
-        prelievo: false,
-        ricezione: false
-      }
+      manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
 
-    const videoMap = {
-      registrazione: 'reg-video',
-      prelievo: 'prel-video',
-      ricezione: 'ric-video'
-    };
+    const videoMap = { registrazione: 'reg-video', prelievo: 'prel-video', ricezione: 'ric-video' };
+    const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
+    const buttonMap = { registrazione: 'reg-scan-btn', prelievo: 'prel-scan-btn', ricezione: 'ric-scan-btn' };
 
-    const placeholderMap = {
-      registrazione: 'reg-placeholder',
-      prelievo: 'prel-placeholder',
-      ricezione: 'ric-placeholder'
-    };
-
-    const buttonMap = {
-      registrazione: 'reg-scan-btn',
-      prelievo: 'prel-scan-btn',
-      ricezione: 'ric-scan-btn'
-    };
-
+    // ================================================
+    // NAVIGAZIONE
+    // ================================================
     function switchPhase(phase) {
       stopScan();
       state.currentPhase = phase;
-
-      document.querySelectorAll('.nav-tab').forEach(function(tab) {
-        tab.classList.remove('active');
-      });
+      document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
       document.getElementById('tab-' + phase).classList.add('active');
-
-      document.querySelectorAll('.phase-panel').forEach(function(panel) {
-        panel.classList.remove('active');
-      });
+      document.querySelectorAll('.phase-panel').forEach(function(p) { p.classList.remove('active'); });
       document.getElementById('panel-' + phase).classList.add('active');
-
-      if (phase === 'monitor') {
-        aggiornaMonitor();
-      }
+      if (phase === 'monitor') aggiornaMonitor();
     }
 
+    // ================================================
+    // API
+    // ================================================
     async function apiCall(action, payload) {
       const body = Object.assign({ action: action }, payload || {});
-
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(body)
       });
-
       const text = await response.text();
-
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        throw new Error('Risposta backend non valida: ' + text);
-      }
+      try { return JSON.parse(text); }
+      catch (e) { throw new Error('Risposta non valida: ' + text.substring(0, 100)); }
     }
 
+    // ================================================
+    // SCANNER — CODE 128 ONLY
+    // ================================================
     function getScanControls(phase) {
       return {
         video: document.getElementById(videoMap[phase]),
@@ -780,61 +712,42 @@
     }
 
     async function startScan(phase) {
-      if (state.scanning) {
-        stopScan();
-        return;
-      }
+      if (state.scanning) { stopScan(); return; }
 
-      if (!window.isSecureContext) {
-        showToast('La pagina deve essere aperta in HTTPS', 'error');
-        return;
-      }
-
+      if (!window.isSecureContext) { showToast('Richiesto HTTPS', 'error'); return; }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('Fotocamera non supportata da questo browser', 'error');
-        return;
+        showToast('Fotocamera non supportata', 'error'); return;
       }
+      if (!window.ZXing) { showToast('Libreria scanner non caricata', 'error'); return; }
 
-      if (!window.ZXing) {
-        showToast('Libreria scanner non caricata', 'error');
-        return;
-      }
+      const controls = getScanControls(phase);
 
       try {
-        const controls = getScanControls(phase);
-
         state.scanning = true;
         state.activePhase = phase;
-        state.currentControls = controls;
 
         controls.placeholder.style.display = 'none';
         controls.button.innerHTML = '&#9724; Ferma Scansione';
         controls.button.className = 'btn btn-stop';
 
-        if (!state.codeReader) {
-          state.codeReader = new ZXing.BrowserMultiFormatReader();
+        // FIX: Creare un reader SOLO Code 128 usando DecodeHintType
+        var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+        // Ogni scansione crea un nuovo reader per evitare conflitti
+        if (state.codeReader) {
+          try { state.codeReader.reset(); } catch(e) {}
         }
+        state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
-        const constraints = {
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        };
-
-        await navigator.mediaDevices.getUserMedia(constraints)
-          .then(function(stream) {
-            stream.getTracks().forEach(function(track) { track.stop(); });
-          });
-
-        state.codeReader.decodeFromConstraints(
-          constraints,
+        // FIX: Usare decodeFromVideoDevice direttamente (no doppio getUserMedia)
+        // null = seleziona automaticamente la fotocamera posteriore
+        await state.codeReader.decodeFromVideoDevice(
+          null,
           controls.video,
           function(result, err) {
             if (!state.scanning || state.activePhase !== phase) return;
-
             if (result && result.text) {
               onBarcodeDetected(result.text, phase);
             }
@@ -842,20 +755,14 @@
         );
 
       } catch (err) {
-        console.error(err);
+        console.error('Scanner error:', err);
         stopScan();
 
-        let msg = 'Errore fotocamera';
-        if (err && err.name === 'NotAllowedError') {
-          msg = 'Permesso fotocamera negato';
-        } else if (err && err.name === 'NotFoundError') {
-          msg = 'Nessuna fotocamera trovata';
-        } else if (err && err.name === 'NotReadableError') {
-          msg = 'Fotocamera occupata da un’altra app';
-        } else if (err && err.message) {
-          msg = err.message;
-        }
-
+        var msg = 'Errore fotocamera';
+        if (err && err.name === 'NotAllowedError') msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
+        else if (err && err.name === 'NotFoundError') msg = 'Nessuna fotocamera trovata';
+        else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
+        else if (err && err.message) msg = err.message;
         showToast(msg, 'error');
       }
     }
@@ -865,22 +772,20 @@
       state.activePhase = null;
 
       if (state.codeReader) {
-        try {
-          state.codeReader.reset();
-        } catch (e) {
-          console.warn(e);
-        }
+        try { state.codeReader.reset(); } catch (e) {}
+        state.codeReader = null;
       }
 
       ['registrazione', 'prelievo', 'ricezione'].forEach(function(phase) {
-        const controls = getScanControls(phase);
+        var controls = getScanControls(phase);
         if (controls.video) {
           controls.video.pause();
-          controls.video.srcObject = null;
+          if (controls.video.srcObject) {
+            controls.video.srcObject.getTracks().forEach(function(t) { t.stop(); });
+            controls.video.srcObject = null;
+          }
         }
-        if (controls.placeholder) {
-          controls.placeholder.style.display = '';
-        }
+        if (controls.placeholder) controls.placeholder.style.display = '';
         if (controls.button) {
           controls.button.innerHTML = '&#128247; Avvia Scansione';
           controls.button.className = 'btn btn-scan';
@@ -889,8 +794,16 @@
     }
 
     function onBarcodeDetected(code, phase) {
-      const cleanCode = String(code || '').trim();
+      var cleanCode = String(code || '').trim();
       if (!cleanCode) return;
+
+      // Validazione: i codici ODV e CL contengono lettere e trattini
+      // Se il risultato contiene solo numeri e non contiene "-", probabilmente
+      // e' stato letto con il formato sbagliato — scartare
+      if (/^\d+$/.test(cleanCode) && cleanCode.length < 12) {
+        console.warn('Scartato risultato sospetto (solo numeri):', cleanCode);
+        return;
+      }
 
       if (navigator.vibrate) navigator.vibrate(100);
 
@@ -898,7 +811,6 @@
         case 'registrazione':
           handleRegScan(cleanCode);
           break;
-
         case 'prelievo':
           stopScan();
           document.getElementById('prel-odv').value = cleanCode;
@@ -906,7 +818,6 @@
           document.getElementById('prel-confirm-btn').disabled = false;
           showToast('ODV scansionato: ' + cleanCode, 'success');
           break;
-
         case 'ricezione':
           stopScan();
           document.getElementById('ric-odv').value = cleanCode;
@@ -917,6 +828,9 @@
       }
     }
 
+    // ================================================
+    // FASE 1 — REGISTRAZIONE
+    // ================================================
     function handleRegScan(code) {
       if (state.regStep === 1) {
         document.getElementById('reg-odv').value = code;
@@ -928,7 +842,6 @@
         showToast('ODV scansionato! Ora scansiona il CL', 'info');
         return;
       }
-
       if (state.regStep === 2) {
         document.getElementById('reg-cl').value = code;
         document.getElementById('reg-cl').classList.add('scanned');
@@ -944,61 +857,46 @@
     }
 
     function updateRegSteps() {
-      const s = state.regStep;
-
+      var s = state.regStep;
       document.getElementById('reg-step1').className = 'step-dot ' + (s > 1 ? 'done' : 'active');
       document.getElementById('reg-step1').innerHTML = s > 1 ? '&#10003;' : '1';
-
       document.getElementById('reg-step2').className = 'step-dot ' + (s > 2 ? 'done' : (s === 2 ? 'active' : ''));
       document.getElementById('reg-step2').innerHTML = s > 2 ? '&#10003;' : '2';
-
       document.getElementById('reg-step3').className = 'step-dot ' + (s === 3 ? 'active' : '');
       document.getElementById('reg-step3').innerHTML = '3';
-
       document.getElementById('reg-line1').className = 'step-line' + (s > 1 ? ' done' : '');
       document.getElementById('reg-line2').className = 'step-line' + (s > 2 ? ' done' : '');
     }
 
     function checkRegReady() {
-      const odv = document.getElementById('reg-odv').value.trim();
-      const cl = document.getElementById('reg-cl').value.trim();
-      const data = document.getElementById('reg-data').value;
+      var odv = document.getElementById('reg-odv').value.trim();
+      var cl = document.getElementById('reg-cl').value.trim();
+      var data = document.getElementById('reg-data').value;
       document.getElementById('reg-confirm-btn').disabled = !(odv && cl && data);
     }
 
     async function confermaRegistrazione() {
-      const odv = document.getElementById('reg-odv').value.trim();
-      const cl = document.getElementById('reg-cl').value.trim();
-      const data = document.getElementById('reg-data').value;
+      var odv = document.getElementById('reg-odv').value.trim();
+      var cl = document.getElementById('reg-cl').value.trim();
+      var data = document.getElementById('reg-data').value;
+      if (!odv || !cl || !data) { showToast('Compila tutti i campi', 'warning'); return; }
 
-      if (!odv || !cl || !data) {
-        showToast('Compila tutti i campi', 'warning');
-        return;
-      }
-
-      const btn = document.getElementById('reg-confirm-btn');
+      var btn = document.getElementById('reg-confirm-btn');
       btn.disabled = true;
       btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
 
       try {
-        const result = await apiCall('registraODV', {
-          codiceODV: odv,
-          codiceCL: cl,
-          dataConsegnaPrevista: data
-        });
-
+        var result = await apiCall('registraODV', { codiceODV: odv, codiceCL: cl, dataConsegnaPrevista: data });
         if (result.success) {
           showToast('Registrato: ' + odv + ' \u2194 ' + cl, 'success');
           resetRegistrazione();
         } else {
-          showToast(result.message || 'Errore in registrazione', result.type === 'duplicate' ? 'warning' : 'error');
-          btn.disabled = false;
-          btn.innerHTML = '&#10004; Conferma Registrazione';
+          showToast(result.message || 'Errore', result.type === 'duplicate' ? 'warning' : 'error');
+          btn.disabled = false; btn.innerHTML = '&#10004; Conferma Registrazione';
         }
       } catch (err) {
         showToast('Errore di connessione: ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '&#10004; Conferma Registrazione';
+        btn.disabled = false; btn.innerHTML = '&#10004; Conferma Registrazione';
       }
     }
 
@@ -1006,62 +904,43 @@
       stopScan();
       state.regStep = 1;
       updateRegSteps();
-
       document.getElementById('reg-odv').value = '';
       document.getElementById('reg-cl').value = '';
       document.getElementById('reg-data').value = '';
-
       document.getElementById('reg-odv').classList.remove('scanned');
       document.getElementById('reg-cl').classList.remove('scanned');
-
       document.getElementById('reg-odv-badge').style.display = 'none';
       document.getElementById('reg-cl-badge').style.display = 'none';
-
       document.getElementById('reg-data').disabled = true;
       document.getElementById('reg-confirm-btn').disabled = true;
       document.getElementById('reg-confirm-btn').innerHTML = '&#10004; Conferma Registrazione';
       document.getElementById('reg-scanner-title').textContent = 'Scansiona ODV';
-
-      if (state.manualMode.registrazione) {
-        toggleManualInput('registrazione');
-      }
+      if (state.manualMode.registrazione) toggleManualInput('registrazione');
     }
 
+    // ================================================
+    // FASE 2 — PRELIEVO
+    // ================================================
     async function confermaPrelievo() {
-      const odv = document.getElementById('prel-odv').value.trim();
-
-      if (!odv) {
-        showToast('Scansiona prima un ODV', 'warning');
-        return;
-      }
-
-      const btn = document.getElementById('prel-confirm-btn');
+      var odv = document.getElementById('prel-odv').value.trim();
+      if (!odv) { showToast('Scansiona prima un ODV', 'warning'); return; }
+      var btn = document.getElementById('prel-confirm-btn');
       btn.disabled = true;
       btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
-
       try {
-        const result = await apiCall('registraPrelievo', {
-          codiceODV: odv
-        });
-
+        var result = await apiCall('registraPrelievo', { codiceODV: odv });
         if (result.success) {
           showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          state.prelieviSessione.unshift({
-            odv: odv,
-            cl: result.data.cl,
-            ora: result.data.dataPrelievo
-          });
+          state.prelieviSessione.unshift({ odv: odv, cl: result.data.cl, ora: result.data.dataPrelievo });
           updateSessionLog('prel');
           resetPrelievo();
         } else {
-          showToast(result.message || 'Errore nel prelievo', 'error');
-          btn.disabled = false;
-          btn.innerHTML = '&#128230; Conferma Prelievo';
+          showToast(result.message || 'Errore', 'error');
+          btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo';
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '&#128230; Conferma Prelievo';
+        btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo';
       }
     }
 
@@ -1071,47 +950,32 @@
       document.getElementById('prel-odv').classList.remove('scanned');
       document.getElementById('prel-confirm-btn').disabled = true;
       document.getElementById('prel-confirm-btn').innerHTML = '&#128230; Conferma Prelievo';
-
-      if (state.manualMode.prelievo) {
-        toggleManualInput('prelievo');
-      }
+      if (state.manualMode.prelievo) toggleManualInput('prelievo');
     }
 
+    // ================================================
+    // FASE 3 — RICEZIONE
+    // ================================================
     async function confermaRicezione() {
-      const odv = document.getElementById('ric-odv').value.trim();
-
-      if (!odv) {
-        showToast('Scansiona prima un ODV', 'warning');
-        return;
-      }
-
-      const btn = document.getElementById('ric-confirm-btn');
+      var odv = document.getElementById('ric-odv').value.trim();
+      if (!odv) { showToast('Scansiona prima un ODV', 'warning'); return; }
+      var btn = document.getElementById('ric-confirm-btn');
       btn.disabled = true;
       btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
-
       try {
-        const result = await apiCall('registraRicezione', {
-          codiceODV: odv
-        });
-
+        var result = await apiCall('registraRicezione', { codiceODV: odv });
         if (result.success) {
           showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          state.ricezioniSessione.unshift({
-            odv: odv,
-            cl: result.data.cl,
-            ora: result.data.dataRicezione
-          });
+          state.ricezioniSessione.unshift({ odv: odv, cl: result.data.cl, ora: result.data.dataRicezione });
           updateSessionLog('ric');
           resetRicezione();
         } else {
-          showToast(result.message || 'Errore nella ricezione', 'error');
-          btn.disabled = false;
-          btn.innerHTML = '&#9989; Conferma Ricezione';
+          showToast(result.message || 'Errore', 'error');
+          btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione';
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '&#9989; Conferma Ricezione';
+        btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione';
       }
     }
 
@@ -1121,27 +985,21 @@
       document.getElementById('ric-odv').classList.remove('scanned');
       document.getElementById('ric-confirm-btn').disabled = true;
       document.getElementById('ric-confirm-btn').innerHTML = '&#9989; Conferma Ricezione';
-
-      if (state.manualMode.ricezione) {
-        toggleManualInput('ricezione');
-      }
+      if (state.manualMode.ricezione) toggleManualInput('ricezione');
     }
 
+    // ================================================
+    // SESSION LOG
+    // ================================================
     function updateSessionLog(prefix) {
-      const items = prefix === 'prel' ? state.prelieviSessione : state.ricezioniSessione;
-      const container = document.getElementById(prefix + '-session-log');
-      const card = document.getElementById(prefix + '-log-card');
-
-      if (items.length === 0) {
-        card.style.display = 'none';
-        return;
-      }
-
+      var items = prefix === 'prel' ? state.prelieviSessione : state.ricezioniSessione;
+      var container = document.getElementById(prefix + '-session-log');
+      var card = document.getElementById(prefix + '-log-card');
+      if (items.length === 0) { card.style.display = 'none'; return; }
       card.style.display = 'block';
-
-      let html = '';
+      var html = '';
       items.forEach(function(item) {
-        const dotClass = prefix === 'prel' ? 'prelevato' : 'chiuso';
+        var dotClass = prefix === 'prel' ? 'prelevato' : 'chiuso';
         html += '<div class="log-item">';
         html += '<div class="log-dot ' + dotClass + '"></div>';
         html += '<div class="log-info">';
@@ -1149,35 +1007,32 @@
         html += '<div class="log-date">' + escapeHtml(item.ora) + '</div>';
         html += '</div></div>';
       });
-
       container.innerHTML = html;
     }
 
+    // ================================================
+    // MONITOR
+    // ================================================
     async function aggiornaMonitor() {
       try {
-        const statsResponse = await apiCall('getStats');
-        const stats = statsResponse.data || statsResponse;
-
+        var statsResp = await apiCall('getStats');
+        var stats = statsResp.data || statsResp;
         document.getElementById('stat-aperti').textContent = stats.aperti ?? 0;
         document.getElementById('stat-prelevati').textContent = stats.prelevati ?? 0;
         document.getElementById('stat-chiusi').textContent = stats.chiusi ?? 0;
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
 
       try {
-        const itemsResponse = await apiCall('getUltimeRegistrazioni', { n: 15 });
-        const items = itemsResponse.data || [];
-
-        const container = document.getElementById('activity-log');
+        var itemsResp = await apiCall('getUltimeRegistrazioni', { n: 15 });
+        var items = itemsResp.data || [];
+        var container = document.getElementById('activity-log');
         if (!items || items.length === 0) {
           container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessuna registrazione</div>';
           return;
         }
-
-        let html = '';
+        var html = '';
         items.forEach(function(item) {
-          const statoClass = String(item.stato || '').toLowerCase();
+          var statoClass = String(item.stato || '').toLowerCase();
           html += '<div class="log-item">';
           html += '<div class="log-dot ' + statoClass + '"></div>';
           html += '<div class="log-info">';
@@ -1187,22 +1042,23 @@
           html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
           html += '</div>';
         });
-
         container.innerHTML = html;
       } catch (err) {
         document.getElementById('activity-log').innerHTML =
-          '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento monitor</div>';
+          '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
 
+    // ================================================
+    // INSERIMENTO MANUALE
+    // ================================================
     function toggleManualInput(phase) {
-      const isManual = !state.manualMode[phase];
+      var isManual = !state.manualMode[phase];
       state.manualMode[phase] = isManual;
 
       if (phase === 'registrazione') {
         document.getElementById('reg-odv').readOnly = !isManual;
         document.getElementById('reg-cl').readOnly = !isManual;
-
         if (isManual) {
           stopScan();
           document.getElementById('reg-scanner-card').style.display = 'none';
@@ -1216,14 +1072,11 @@
           document.getElementById('reg-odv').readOnly = true;
           document.getElementById('reg-cl').readOnly = true;
         }
-
         checkRegReady();
         return;
       }
-
       if (phase === 'prelievo') {
         document.getElementById('prel-odv').readOnly = !isManual;
-
         if (isManual) {
           stopScan();
           document.getElementById('prel-scanner-card').style.display = 'none';
@@ -1233,14 +1086,11 @@
           document.getElementById('prel-odv').placeholder = 'Scansiona il codice ODV';
           document.getElementById('prel-odv').readOnly = true;
         }
-
         document.getElementById('prel-confirm-btn').disabled = !document.getElementById('prel-odv').value.trim();
         return;
       }
-
       if (phase === 'ricezione') {
         document.getElementById('ric-odv').readOnly = !isManual;
-
         if (isManual) {
           stopScan();
           document.getElementById('ric-scanner-card').style.display = 'none';
@@ -1250,42 +1100,37 @@
           document.getElementById('ric-odv').placeholder = 'Scansiona il codice ODV';
           document.getElementById('ric-odv').readOnly = true;
         }
-
         document.getElementById('ric-confirm-btn').disabled = !document.getElementById('ric-odv').value.trim();
       }
     }
 
+    // ================================================
+    // UTILITIES
+    // ================================================
     function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+      return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
     function showToast(message, type) {
-      const toast = document.getElementById('toast');
+      var toast = document.getElementById('toast');
       toast.textContent = message;
       toast.className = 'toast ' + (type || 'info');
       toast.offsetHeight;
       toast.classList.add('show');
-      setTimeout(function() {
-        toast.classList.remove('show');
-      }, 3000);
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
     }
 
+    // ================================================
+    // INIT
+    // ================================================
     document.addEventListener('DOMContentLoaded', function() {
       updateRegSteps();
-
       document.getElementById('reg-data').addEventListener('change', checkRegReady);
       document.getElementById('reg-odv').addEventListener('input', checkRegReady);
       document.getElementById('reg-cl').addEventListener('input', checkRegReady);
-
       document.getElementById('prel-odv').addEventListener('input', function() {
         document.getElementById('prel-confirm-btn').disabled = !this.value.trim();
       });
-
       document.getElementById('ric-odv').addEventListener('input', function() {
         document.getElementById('ric-confirm-btn').disabled = !this.value.trim();
       });
