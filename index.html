@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Conto Lavoro Laccatura</title>
 
-  <script src="https://unpkg.com/@AUO/zxing-library@0.21.3/umd/index.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -656,6 +656,7 @@
     // CONFIGURAZIONE
     // ================================================
     const API_URL = 'https://script.google.com/macros/s/AKfycbxhG7eFPAvDaGmFky_mVDyVanW-2F20jvjftrNnytBjITw-s-yriYegDYc_kBNQT7sc/exec';
+    const ZXING_FALLBACK_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
 
     const state = {
       currentPhase: 'registrazione',
@@ -671,6 +672,27 @@
     const videoMap = { registrazione: 'reg-video', prelievo: 'prel-video', ricezione: 'ric-video' };
     const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
     const buttonMap = { registrazione: 'reg-scan-btn', prelievo: 'prel-scan-btn', ricezione: 'ric-scan-btn' };
+
+    async function ensureZXingLoaded() {
+      if (window.ZXing) return true;
+
+      return new Promise(function(resolve) {
+        var existing = document.getElementById('zxing-fallback-script');
+        if (existing) {
+          existing.addEventListener('load', function() { resolve(!!window.ZXing); }, { once: true });
+          existing.addEventListener('error', function() { resolve(false); }, { once: true });
+          return;
+        }
+
+        var script = document.createElement('script');
+        script.id = 'zxing-fallback-script';
+        script.src = ZXING_FALLBACK_URL;
+        script.async = true;
+        script.onload = function() { resolve(!!window.ZXing); };
+        script.onerror = function() { resolve(false); };
+        document.head.appendChild(script);
+      });
+    }
 
     // ================================================
     // NAVIGAZIONE
@@ -718,7 +740,10 @@
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showToast('Fotocamera non supportata', 'error'); return;
       }
-      if (!window.ZXing) { showToast('Libreria scanner non caricata', 'error'); return; }
+      if (!window.ZXing) {
+        var loaded = await ensureZXingLoaded();
+        if (!loaded) { showToast('Libreria scanner non caricata', 'error'); return; }
+      }
 
       const controls = getScanControls(phase);
 
