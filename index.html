@@ -122,70 +122,16 @@
     }
     .card-title .icon { font-size: 18px; }
 
-    .scanner-area {
-      position: relative;
+    /* Anteprima foto scattata — mostrata brevemente prima della lettura */
+    .photo-preview {
       width: 100%;
-      aspect-ratio: 4/3;
-      background: #1a1a2e;
+      max-height: 180px;
+      object-fit: contain;
       border-radius: var(--radius-sm);
-      overflow: hidden;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      display: none;
+      background: #f0f0f0;
     }
-    .scanner-area video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      background: #000;
-    }
-
-    .scanner-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-
-    .scan-guide {
-      width: 75%;
-      height: 30%;
-      border: 2.5px solid rgba(255,255,255,0.7);
-      border-radius: 12px;
-      position: relative;
-    }
-
-    .scan-guide::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 90%;
-      height: 2px;
-      background: var(--danger);
-      opacity: 0.8;
-      animation: scanPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes scanPulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
-
-    .scanner-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255,255,255,0.5);
-      font-size: 14px;
-      gap: 8px;
-    }
-
-    .scanner-placeholder .icon { font-size: 40px; }
 
     .field-group { margin-bottom: 14px; }
 
@@ -441,30 +387,6 @@
       text-decoration: underline;
     }
 
-    /* Pulsante torcia sovrapposto all'area scanner */
-    .btn-torch {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.55);
-      border: 1.5px solid rgba(255,255,255,0.3);
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-      z-index: 10;
-    }
-    .btn-torch.on { background: rgba(255,220,0,0.75); color: #333; }
-
-    /* Cursore "tocca per mettere a fuoco" sul video */
-    .scanner-area video { cursor: crosshair; }
-
     /* Barra diagnostica scanner — visibile durante la scansione */
     .scan-debug {
       min-height: 20px;
@@ -524,19 +446,10 @@
           <span class="icon">&#128247;</span>
           <span id="reg-scanner-title">Scansiona ODV</span>
         </div>
-        <div class="scanner-area">
-          <video id="reg-video" playsinline muted></video>
-          <div class="scanner-overlay">
-            <div class="scan-guide"></div>
-            <button class="btn-torch" id="torch-btn-reg" title="Torcia">&#128294;</button>
-          </div>
-          <div class="scanner-placeholder" id="reg-placeholder">
-            <span class="icon">&#128247;</span>
-            <span>Premi per attivare la fotocamera</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="reg-scan-btn" onclick="startScan('registrazione')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-reg" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'registrazione')">
+        <img id="preview-reg" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="reg-scan-btn" onclick="capturePhoto('registrazione')">
+          &#128247; Scatta foto
         </button>
         <div class="scan-debug" id="reg-scan-debug"></div>
         <div class="manual-toggle">
@@ -577,19 +490,10 @@
           <span class="icon">&#128247;</span>
           <span>Scansiona ODV per prelievo</span>
         </div>
-        <div class="scanner-area">
-          <video id="prel-video" playsinline muted></video>
-          <div class="scanner-overlay">
-            <div class="scan-guide"></div>
-            <button class="btn-torch" id="torch-btn-prel" title="Torcia">&#128294;</button>
-          </div>
-          <div class="scanner-placeholder" id="prel-placeholder">
-            <span class="icon">&#128230;</span>
-            <span>Scansiona ODV dal carrello</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="prel-scan-btn" onclick="startScan('prelievo')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-prel" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'prelievo')">
+        <img id="preview-prel" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="prel-scan-btn" onclick="capturePhoto('prelievo')">
+          &#128247; Scatta foto
         </button>
         <div class="scan-debug" id="prel-scan-debug"></div>
         <div class="manual-toggle">
@@ -624,19 +528,10 @@
           <span class="icon">&#128247;</span>
           <span>Scansiona ODV per ricezione</span>
         </div>
-        <div class="scanner-area">
-          <video id="ric-video" playsinline muted></video>
-          <div class="scanner-overlay">
-            <div class="scan-guide"></div>
-            <button class="btn-torch" id="torch-btn-ric" title="Torcia">&#128294;</button>
-          </div>
-          <div class="scanner-placeholder" id="ric-placeholder">
-            <span class="icon">&#9989;</span>
-            <span>Scansiona ODV dal carrello rientrato</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="ric-scan-btn" onclick="startScan('ricezione')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-ric" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'ricezione')">
+        <img id="preview-ric" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="ric-scan-btn" onclick="capturePhoto('ricezione')">
+          &#128247; Scatta foto
         </button>
         <div class="scan-debug" id="ric-scan-debug"></div>
         <div class="manual-toggle">
@@ -712,22 +607,14 @@
     const state = {
       currentPhase: 'registrazione',
       regStep: 1,
-      scanning: false,
-      activePhase: null,
-      codeReader: null,
-      decodeInterval: null,
-      activeStream: null,
       prelieviSessione: [],
       ricezioniSessione: [],
-      manualMode: { registrazione: false, prelievo: false, ricezione: false },
-      lastScanCode: null,   // debounce: ultimo codice valido rilevato
-      lastScanTime: 0       // debounce: timestamp del primo rilevamento
+      manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
 
-    const videoMap     = { registrazione: 'reg-video',        prelievo: 'prel-video',        ricezione: 'ric-video' };
-    const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
-    const buttonMap    = { registrazione: 'reg-scan-btn',    prelievo: 'prel-scan-btn',    ricezione: 'ric-scan-btn' };
-    const debugMap     = { registrazione: 'reg-scan-debug',  prelievo: 'prel-scan-debug',  ricezione: 'ric-scan-debug' };
+    const PHASE_ABBR   = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
+    const buttonMap    = { registrazione: 'reg-scan-btn',   prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
+    const debugMap     = { registrazione: 'reg-scan-debug', prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -779,89 +666,25 @@
     }
 
     // ================================================
-    // SCANNER — CODE 128 ONLY
+    // SCANNER — lettura codice a barre da foto
     // ================================================
-    function getScanControls(phase) {
-      return {
-        video: document.getElementById(videoMap[phase]),
-        placeholder: document.getElementById(placeholderMap[phase]),
-        button: document.getElementById(buttonMap[phase])
-      };
+
+    // Apre la fotocamera nativa del dispositivo per scattare una foto
+    function capturePhoto(phase) {
+      var input = document.getElementById('file-' + PHASE_ABBR[phase]);
+      input.value = '';   // reset per permettere la stessa foto due volte
+      input.click();
     }
 
-    // ------------------------------------------------
-    // Helpers scanner
-    // ------------------------------------------------
+    // Viene chiamata quando l'utente ha scattato/scelto una foto
+    async function processPhotoFile(inputEl, phase) {
+      var file = inputEl.files && inputEl.files[0];
+      if (!file) return;
 
-    // Tap-to-focus: un tocco sul video richiede un ciclo di messa a fuoco
-    function tapToFocus(videoEl) {
-      var stream = videoEl.srcObject;
-      if (!stream) return;
-      var track = stream.getVideoTracks()[0];
-      if (!track || !track.applyConstraints) return;
-      var caps = track.getCapabilities ? track.getCapabilities() : {};
-      var modes = caps.focusMode || [];
-      var mode = modes.includes('single-shot') ? 'single-shot'
-               : modes.includes('manual')      ? 'manual' : null;
-      if (!mode) return;
-      track.applyConstraints({ advanced: [{ focusMode: mode }] })
-        .then(function() {
-          // Ripristina autofocus continuo dopo 1.5 s
-          setTimeout(function() {
-            if (modes.includes('continuous')) {
-              track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function(){});
-            }
-          }, 1500);
-        }).catch(function(){});
-    }
-
-    // Configura il pulsante torcia per la fase corrente
-    var TORCH_ABBR = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
-    function setupTorch(phase, track) {
-      var btn = document.getElementById('torch-btn-' + TORCH_ABBR[phase]);
-      if (!btn) return;
-      var caps = track && track.getCapabilities ? track.getCapabilities() : {};
-      if (caps.torch) {
-        btn.style.display = 'flex';
-        btn.dataset.torchOn = '0';
-        btn.onclick = function(e) {
-          e.stopPropagation();
-          var on = btn.dataset.torchOn === '1';
-          track.applyConstraints({ advanced: [{ torch: !on }] })
-            .then(function() {
-              btn.dataset.torchOn = on ? '0' : '1';
-              btn.innerHTML   = on ? '&#128294;' : '&#128293;';
-              btn.className   = on ? 'btn-torch' : 'btn-torch on';
-            }).catch(function(){});
-        };
-      } else {
-        btn.style.display = 'none';
-      }
-    }
-
-    // ------------------------------------------------
-    // startScan / stopScan
-    //
-    // Strategia di decodifica a due livelli:
-    //   1. BarcodeDetector API (nativa, hardware-accelerata, indipendente
-    //      dall'orientazione — disponibile su Chrome ≥ 83 Android,
-    //      Safari ≥ 17 iOS, Edge ≥ 83)
-    //   2. ZXing fallback (TRY_HARDER) per browser senza BarcodeDetector
-    //
-    // Lo stream è sempre gestito manualmente (getUserMedia) per avere
-    // controllo su autofocus, torcia e tap-to-focus.
-    // ------------------------------------------------
-    async function startScan(phase) {
-      if (state.scanning) { stopScan(); return; }
-
-      if (!window.isSecureContext) { showToast('Richiesto HTTPS', 'error'); return; }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('Fotocamera non supportata', 'error'); return;
-      }
-
-      var controls  = getScanControls(phase);
-      var debugEl   = document.getElementById(debugMap[phase]);
-      var frameCount = 0;
+      var abbr   = PHASE_ABBR[phase];
+      var debugEl = document.getElementById(debugMap[phase]);
+      var btnEl   = document.getElementById(buttonMap[phase]);
+      var previewEl = document.getElementById('preview-' + abbr);
 
       function setDebug(msg, cls) {
         if (!debugEl) return;
@@ -869,185 +692,78 @@
         debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
       }
 
-      state.scanning = true;
-      state.activePhase = phase;
-      controls.placeholder.style.display = 'none';
-      controls.button.innerHTML = '&#9724; Ferma Scansione';
-      controls.button.className = 'btn btn-stop';
-      setDebug('Avvio fotocamera...');
+      // Mostra anteprima e stato "lettura in corso"
+      var objectUrl = URL.createObjectURL(file);
+      if (previewEl) { previewEl.src = objectUrl; previewEl.style.display = 'block'; }
+      if (btnEl) btnEl.disabled = true;
+      setDebug('Lettura codice a barre...', 'active');
 
       try {
-        // 1. Stream: fotocamera posteriore, risoluzione ideale 1280px
-        var stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { min: 640, ideal: 1280 } }
-        });
-        state.activeStream = stream;
-        controls.video.srcObject = stream;
-        await controls.video.play();
+        var bitmap = await createImageBitmap(file);
+        var code = null;
 
-        // 2. Autofocus continuo + torcia + tap-to-focus
-        var track = stream.getVideoTracks()[0];
-        if (track && track.applyConstraints) {
-          track.applyConstraints({
-            advanced: [{ focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' }]
-          }).catch(function(){});
-        }
-        setupTorch(phase, track);
-        controls.video.onclick = function() { tapToFocus(controls.video); };
-
-        // ── Percorso A: BarcodeDetector (nativo) ─────────────────────────
-        // Gestisce qualsiasi orientazione senza bisogno di rotare l'immagine.
-        var detector = null;
-        if ('BarcodeDetector' in window) {
-          try { detector = new BarcodeDetector({ formats: ['code_128'] }); }
-          catch(e) { detector = null; }
+        // ── Percorso A: BarcodeDetector (nativo, gestisce qualsiasi orientazione)
+        if (!code && 'BarcodeDetector' in window) {
+          try {
+            var det = new BarcodeDetector({ formats: ['code_128'] });
+            var found = await det.detect(bitmap);
+            if (found.length > 0) code = found[0].rawValue;
+          } catch(e) {}
         }
 
-        if (detector) {
-          setDebug('Scanner attivo — tocca per mettere a fuoco', 'active');
-          state.decodeInterval = setInterval(function() {
-            if (!state.scanning || state.activePhase !== phase) return;
-            detector.detect(controls.video).then(function(barcodes) {
-              if (!state.scanning || state.activePhase !== phase) return;
-              if (barcodes.length > 0) {
-                var code = barcodes[0].rawValue;
-                console.log('[BarcodeDetector] CODE_128:', code);
-                setDebug('Letto: ' + code, 'active');
-                onBarcodeDetected(code, phase);
-              } else {
-                frameCount++;
-                if (frameCount % 10 === 0) {
-                  setDebug('Frame: ' + frameCount + ' — tocca per mettere a fuoco', 'active');
-                }
-              }
-            }).catch(function(){});
-          }, 100);
-
-        // ── Percorso B: ZXing fallback ────────────────────────────────────
-        } else {
-          if (!window.ZXing) {
-            var ok = await ensureZXingLoaded();
-            if (!ok) { showToast('Libreria scanner non caricata', 'error'); stopScan(); return; }
+        // ── Percorso B: ZXing — se BarcodeDetector non disponibile o non ha trovato nulla
+        if (!code) {
+          if (!window.ZXing) await ensureZXingLoaded();
+          if (window.ZXing) {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width  = bitmap.width;
+              canvas.height = bitmap.height;
+              canvas.getContext('2d').drawImage(bitmap, 0, 0);
+              var hints = new Map();
+              hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+              hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+              var reader = new ZXing.BrowserMultiFormatReader(hints);
+              var res = await reader.decodeFromCanvas(canvas);
+              if (res) code = typeof res.getText === 'function' ? res.getText() : res.text;
+            } catch(e) {}
           }
-          var hints = new Map();
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-          hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-          if (state.codeReader) { try { state.codeReader.reset(); } catch(e) {} }
-          state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
+        }
 
-          // decodeFromStream usa lo stream già aperto (no doppio getUserMedia)
-          state.codeReader.decodeFromStream(stream, controls.video, function(result, err) {
-            if (!state.scanning || state.activePhase !== phase) return;
-            if (result) {
-              var text = typeof result.getText === 'function' ? result.getText() : result.text;
-              console.log('[ZXing] CODE_128:', text);
-              setDebug('Letto: ' + text, 'active');
-              onBarcodeDetected(text, phase);
-              return;
-            }
-            frameCount++;
-            if (frameCount % 30 === 0) {
-              setDebug('Frame: ' + frameCount + ' (ZXing) — tocca per mettere a fuoco', 'active');
-            }
-          }).catch(function(err) {
-            if (!state.scanning) return;
-            stopScan();
-            var msg = 'Errore fotocamera';
-            if (err && err.name === 'NotAllowedError')    msg = 'Permesso fotocamera negato.';
-            else if (err && err.name === 'NotFoundError')    msg = 'Nessuna fotocamera trovata';
-            else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
-            else if (err && err.message) msg = err.message;
-            console.error('[ZXing]', err);
-            showToast(msg, 'error');
-          });
-
-          setDebug('Scanner attivo (ZXing) — tocca per mettere a fuoco', 'active');
+        if (code) {
+          setDebug('Letto: ' + code, 'active');
+          onBarcodeDetected(code, phase);
+        } else {
+          setDebug('Nessun codice trovato — riprova', '');
+          showToast('Nessun codice trovato nella foto — riprova', 'warning');
         }
 
       } catch(err) {
-        stopScan();
-        var msg = 'Errore fotocamera';
-        if (err && err.name === 'NotAllowedError')    msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
-        else if (err && err.name === 'NotFoundError')    msg = 'Nessuna fotocamera trovata';
-        else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
-        else if (err && err.message) msg = err.message;
-        console.error('[Scanner]', err);
-        showToast(msg, 'error');
+        console.error('[Photo scan]', err);
+        setDebug('Errore lettura — riprova', '');
+        showToast('Errore durante la lettura della foto', 'error');
+      } finally {
+        if (btnEl) btnEl.disabled = false;
+        URL.revokeObjectURL(objectUrl);
+        // Nasconde l'anteprima dopo 2 s
+        if (previewEl) setTimeout(function() { previewEl.style.display = 'none'; }, 2000);
       }
     }
 
-    function stopScan() {
-      state.scanning = false;
-      state.activePhase = null;
-      state.lastScanCode = null;
-      state.lastScanTime = 0;
-
-      if (state.decodeInterval) {
-        clearInterval(state.decodeInterval);
-        state.decodeInterval = null;
-      }
-      if (state.codeReader) {
-        try { state.codeReader.reset(); } catch(e) {}
-        state.codeReader = null;
-      }
-      if (state.activeStream) {
-        state.activeStream.getTracks().forEach(function(t) { t.stop(); });
-        state.activeStream = null;
-      }
-
-      ['registrazione', 'prelievo', 'ricezione'].forEach(function(ph) {
-        var controls = getScanControls(ph);
-        if (controls.video) {
-          controls.video.pause();
-          controls.video.onclick = null;
-          controls.video.srcObject = null;
-        }
-        var torchBtn = document.getElementById('torch-btn-' + TORCH_ABBR[ph]);
-        if (torchBtn) {
-          torchBtn.style.display = 'none';
-          torchBtn.dataset.torchOn = '0';
-          torchBtn.innerHTML = '&#128294;';
-          torchBtn.className = 'btn-torch';
-        }
-        if (controls.placeholder) controls.placeholder.style.display = '';
-        if (controls.button) {
-          controls.button.innerHTML = '&#128247; Avvia Scansione';
-          controls.button.className = 'btn btn-scan';
-        }
-        var dbg = document.getElementById(debugMap[ph]);
-        if (dbg) { dbg.textContent = ''; dbg.className = 'scan-debug'; }
-      });
-    }
+    // No-op: mantenuto per compatibilità con le chiamate esistenti nei reset
+    function stopScan() {}
 
     function onBarcodeDetected(code, phase) {
       var cleanCode = String(code || '').trim();
       if (!cleanCode) return;
 
-      // Validazione formato: i codici ODV e CL contengono solo lettere
-      // maiuscole, cifre e trattini. Caratteri come =, ;, <, :, ! indicano
-      // una lettura errata del character set di Code 128 — scartare.
-      if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode)) {
-        console.warn('[Scan] Scartato: caratteri non validi:', cleanCode);
-        return;
-      }
-      // Deve contenere almeno un trattino (tutti i codici validi lo hanno)
-      if (cleanCode.indexOf('-') === -1) {
-        console.warn('[Scan] Scartato: nessun trattino:', cleanCode);
-        return;
-      }
-
-      // Debounce: accetta solo dopo due letture identiche entro 1000 ms.
-      // Elimina i falsi positivi da singole letture distorte.
-      var now = Date.now();
-      if (cleanCode === state.lastScanCode && (now - state.lastScanTime) < 1000) {
-        // Conferma ricevuta → procedi
-        state.lastScanCode = null;
-        state.lastScanTime = 0;
-      } else {
-        // Prima lettura → salva e attendi la conferma
-        state.lastScanCode = cleanCode;
-        state.lastScanTime = now;
-        console.log('[Scan] Prima lettura, attendo conferma:', cleanCode);
+      // Rifiuta codici con caratteri non validi (=, ;, <, :, ! ecc.)
+      // causati da errori di charset Code 128 — accetta solo [A-Z0-9-]
+      if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+        console.warn('[Scan] Scartato: formato non valido:', cleanCode);
+        var dbg = document.getElementById(debugMap[phase]);
+        if (dbg) { dbg.textContent = 'Codice non valido — riprova'; dbg.className = 'scan-debug warn'; }
+        showToast('Codice non riconosciuto — riprova', 'warning');
         return;
       }
 
@@ -1058,14 +774,12 @@
           handleRegScan(cleanCode);
           break;
         case 'prelievo':
-          stopScan();
           document.getElementById('prel-odv').value = cleanCode;
           document.getElementById('prel-odv').classList.add('scanned');
           document.getElementById('prel-confirm-btn').disabled = false;
           showToast('ODV scansionato: ' + cleanCode, 'success');
           break;
         case 'ricezione':
-          stopScan();
           document.getElementById('ric-odv').value = cleanCode;
           document.getElementById('ric-odv').classList.add('scanned');
           document.getElementById('ric-confirm-btn').disabled = false;
