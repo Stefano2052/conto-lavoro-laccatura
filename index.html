@@ -1131,14 +1131,24 @@
       _cameraPhase = phase;
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Prova prima con exact per forzare la fotocamera posteriore
+        // Prova prima con exact, poi senza, entrambi con alta risoluzione
         var constraints = [
-          { video: { facingMode: { exact: 'environment' } } },
-          { video: { facingMode: 'environment' } }
+          { video: { facingMode: { exact: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } },
+          { video: { facingMode: 'environment',            width: { ideal: 1920 }, height: { ideal: 1080 } } }
         ];
         for (var i = 0; i < constraints.length; i++) {
           try {
             _cameraStream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+            // Abilita autofocus continuo se il dispositivo lo supporta
+            var track = _cameraStream.getVideoTracks()[0];
+            if (track && track.applyConstraints) {
+              try {
+                var caps = track.getCapabilities ? track.getCapabilities() : {};
+                if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                  await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                }
+              } catch(e) { /* autofocus non supportato, ignora */ }
+            }
             var video = document.getElementById('camera-video');
             video.srcObject = _cameraStream;
             document.getElementById('camera-modal').classList.add('open');
@@ -1161,10 +1171,11 @@
       canvas.getContext('2d').drawImage(video, 0, 0);
       var phase = _cameraPhase;
       closeCameraModal();
+      // Qualità 0.97 per preservare i dettagli del barcode
       canvas.toBlob(function(blob) {
         var file = new File([blob], 'foto.jpg', { type: 'image/jpeg' });
         processPhotoFile({ files: [file] }, phase);
-      }, 'image/jpeg', 0.92);
+      }, 'image/jpeg', 0.97);
     }
 
     function closeCameraModal() {
