@@ -783,10 +783,8 @@
         controls.button.className = 'btn btn-stop';
         setDebug('Avvio fotocamera...');
 
-        // TRY_HARDER senza restringere il formato: lasciamo che ZXing
-        // provi tutti i formati supportati (Code128, Code39, QR, EAN, ITF…)
-        // così il diagnostic mostra anche qual è il formato effettivo.
         var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
         if (state.codeReader) {
