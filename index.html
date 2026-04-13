@@ -719,7 +719,9 @@
       activeStream: null,
       prelieviSessione: [],
       ricezioniSessione: [],
-      manualMode: { registrazione: false, prelievo: false, ricezione: false }
+      manualMode: { registrazione: false, prelievo: false, ricezione: false },
+      lastScanCode: null,   // debounce: ultimo codice valido rilevato
+      lastScanTime: 0       // debounce: timestamp del primo rilevamento
     };
 
     const videoMap     = { registrazione: 'reg-video',        prelievo: 'prel-video',        ricezione: 'ric-video' };
@@ -919,7 +921,7 @@
                 }
               }
             }).catch(function(){});
-          }, 150);
+          }, 100);
 
         // ── Percorso B: ZXing fallback ────────────────────────────────────
         } else {
@@ -977,6 +979,8 @@
     function stopScan() {
       state.scanning = false;
       state.activePhase = null;
+      state.lastScanCode = null;
+      state.lastScanTime = 0;
 
       if (state.decodeInterval) {
         clearInterval(state.decodeInterval);
@@ -1019,11 +1023,31 @@
       var cleanCode = String(code || '').trim();
       if (!cleanCode) return;
 
-      // Validazione: i codici ODV e CL contengono lettere e trattini
-      // Se il risultato contiene solo numeri e non contiene "-", probabilmente
-      // e' stato letto con il formato sbagliato — scartare
-      if (/^\d+$/.test(cleanCode) && cleanCode.length < 12) {
-        console.warn('Scartato risultato sospetto (solo numeri):', cleanCode);
+      // Validazione formato: i codici ODV e CL contengono solo lettere
+      // maiuscole, cifre e trattini. Caratteri come =, ;, <, :, ! indicano
+      // una lettura errata del character set di Code 128 — scartare.
+      if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode)) {
+        console.warn('[Scan] Scartato: caratteri non validi:', cleanCode);
+        return;
+      }
+      // Deve contenere almeno un trattino (tutti i codici validi lo hanno)
+      if (cleanCode.indexOf('-') === -1) {
+        console.warn('[Scan] Scartato: nessun trattino:', cleanCode);
+        return;
+      }
+
+      // Debounce: accetta solo dopo due letture identiche entro 1000 ms.
+      // Elimina i falsi positivi da singole letture distorte.
+      var now = Date.now();
+      if (cleanCode === state.lastScanCode && (now - state.lastScanTime) < 1000) {
+        // Conferma ricevuta → procedi
+        state.lastScanCode = null;
+        state.lastScanTime = 0;
+      } else {
+        // Prima lettura → salva e attendi la conferma
+        state.lastScanCode = cleanCode;
+        state.lastScanTime = now;
+        console.log('[Scan] Prima lettura, attendo conferma:', cleanCode);
         return;
       }
 
