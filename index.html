@@ -440,6 +440,45 @@
       cursor: pointer; padding: 8px;
       text-decoration: underline;
     }
+
+    /* Pulsante torcia sovrapposto all'area scanner */
+    .btn-torch {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 10;
+    }
+    .btn-torch.on { background: rgba(255,220,0,0.75); color: #333; }
+
+    /* Cursore "tocca per mettere a fuoco" sul video */
+    .scanner-area video { cursor: crosshair; }
+
+    /* Barra diagnostica scanner — visibile durante la scansione */
+    .scan-debug {
+      min-height: 20px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-light);
+      text-align: center;
+      padding: 4px 8px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scan-debug.active { color: var(--accent); }
+    .scan-debug.warn   { color: var(--warning); }
   </style>
 </head>
 <body>
@@ -487,7 +526,10 @@
         </div>
         <div class="scanner-area">
           <video id="reg-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-overlay">
+            <div class="scan-guide"></div>
+            <button class="btn-torch" id="torch-btn-reg" title="Torcia">&#128294;</button>
+          </div>
           <div class="scanner-placeholder" id="reg-placeholder">
             <span class="icon">&#128247;</span>
             <span>Premi per attivare la fotocamera</span>
@@ -496,6 +538,7 @@
         <button class="btn btn-scan" id="reg-scan-btn" onclick="startScan('registrazione')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="reg-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('registrazione')">Inserimento manuale</button>
         </div>
@@ -536,7 +579,10 @@
         </div>
         <div class="scanner-area">
           <video id="prel-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-overlay">
+            <div class="scan-guide"></div>
+            <button class="btn-torch" id="torch-btn-prel" title="Torcia">&#128294;</button>
+          </div>
           <div class="scanner-placeholder" id="prel-placeholder">
             <span class="icon">&#128230;</span>
             <span>Scansiona ODV dal carrello</span>
@@ -545,6 +591,7 @@
         <button class="btn btn-scan" id="prel-scan-btn" onclick="startScan('prelievo')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="prel-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('prelievo')">Inserimento manuale</button>
         </div>
@@ -579,7 +626,10 @@
         </div>
         <div class="scanner-area">
           <video id="ric-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
+          <div class="scanner-overlay">
+            <div class="scan-guide"></div>
+            <button class="btn-torch" id="torch-btn-ric" title="Torcia">&#128294;</button>
+          </div>
           <div class="scanner-placeholder" id="ric-placeholder">
             <span class="icon">&#9989;</span>
             <span>Scansiona ODV dal carrello rientrato</span>
@@ -588,6 +638,7 @@
         <button class="btn btn-scan" id="ric-scan-btn" onclick="startScan('ricezione')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="ric-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('ricezione')">Inserimento manuale</button>
         </div>
@@ -664,14 +715,17 @@
       scanning: false,
       activePhase: null,
       codeReader: null,
+      decodeInterval: null,
+      activeStream: null,
       prelieviSessione: [],
       ricezioniSessione: [],
       manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
 
-    const videoMap = { registrazione: 'reg-video', prelievo: 'prel-video', ricezione: 'ric-video' };
+    const videoMap     = { registrazione: 'reg-video',        prelievo: 'prel-video',        ricezione: 'ric-video' };
     const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
-    const buttonMap = { registrazione: 'reg-scan-btn', prelievo: 'prel-scan-btn', ricezione: 'ric-scan-btn' };
+    const buttonMap    = { registrazione: 'reg-scan-btn',    prelievo: 'prel-scan-btn',    ricezione: 'ric-scan-btn' };
+    const debugMap     = { registrazione: 'reg-scan-debug',  prelievo: 'prel-scan-debug',  ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -733,6 +787,76 @@
       };
     }
 
+    // ------------------------------------------------
+    // Helpers scanner
+    // ------------------------------------------------
+
+    // Tenta la decodifica di un canvas con ZXing (sincrono, ritorna null se non trovato)
+    function tryDecodeCanvas(canvas) {
+      if (!state.codeReader) return null;
+      try {
+        if (typeof state.codeReader.decodeFromCanvas === 'function') {
+          return state.codeReader.decodeFromCanvas(canvas);
+        }
+        // Fallback low-level (tutte le versioni ZXing UMD)
+        var c2d = canvas.getContext('2d');
+        var imgData = c2d.getImageData(0, 0, canvas.width, canvas.height);
+        var lum = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
+        var bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+        if (state.codeReader.reader) return state.codeReader.reader.decode(bmp);
+      } catch(e) { /* NotFoundException = nessun codice nel frame */ }
+      return null;
+    }
+
+    // Tap-to-focus: un tocco sul video richiede un ciclo di messa a fuoco
+    function tapToFocus(videoEl) {
+      var stream = videoEl.srcObject;
+      if (!stream) return;
+      var track = stream.getVideoTracks()[0];
+      if (!track || !track.applyConstraints) return;
+      var caps = track.getCapabilities ? track.getCapabilities() : {};
+      var modes = caps.focusMode || [];
+      var mode = modes.includes('single-shot') ? 'single-shot'
+               : modes.includes('manual')      ? 'manual' : null;
+      if (!mode) return;
+      track.applyConstraints({ advanced: [{ focusMode: mode }] })
+        .then(function() {
+          // Ripristina autofocus continuo dopo 1.5 s
+          setTimeout(function() {
+            if (modes.includes('continuous')) {
+              track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function(){});
+            }
+          }, 1500);
+        }).catch(function(){});
+    }
+
+    // Configura il pulsante torcia per la fase corrente
+    var TORCH_ABBR = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
+    function setupTorch(phase, track) {
+      var btn = document.getElementById('torch-btn-' + TORCH_ABBR[phase]);
+      if (!btn) return;
+      var caps = track && track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.torch) {
+        btn.style.display = 'flex';
+        btn.dataset.torchOn = '0';
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          var on = btn.dataset.torchOn === '1';
+          track.applyConstraints({ advanced: [{ torch: !on }] })
+            .then(function() {
+              btn.dataset.torchOn = on ? '0' : '1';
+              btn.innerHTML   = on ? '&#128294;' : '&#128293;';
+              btn.className   = on ? 'btn-torch' : 'btn-torch on';
+            }).catch(function(){});
+        };
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+
+    // ------------------------------------------------
+    // startScan — loop manuale con rotazione 0° e 90°
+    // ------------------------------------------------
     async function startScan(phase) {
       if (state.scanning) { stopScan(); return; }
 
@@ -745,44 +869,111 @@
         if (!loaded) { showToast('Libreria scanner non caricata', 'error'); return; }
       }
 
-      const controls = getScanControls(phase);
+      var controls = getScanControls(phase);
+      var debugEl = document.getElementById(debugMap[phase]);
+      var frameCount = 0;
+
+      function setDebug(msg, cls) {
+        if (!debugEl) return;
+        debugEl.textContent = msg;
+        debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
+      }
 
       try {
         state.scanning = true;
         state.activePhase = phase;
-
         controls.placeholder.style.display = 'none';
         controls.button.innerHTML = '&#9724; Ferma Scansione';
         controls.button.className = 'btn btn-stop';
+        setDebug('Avvio fotocamera...');
 
-        // FIX: Creare un reader SOLO Code 128 usando DecodeHintType
+        // 1. Ottieni stream — fotocamera posteriore, alta risoluzione
+        var stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width:  { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        });
+        state.activeStream = stream;
+        controls.video.srcObject = stream;
+        await new Promise(function(res) { controls.video.onloadedmetadata = res; });
+        await controls.video.play();
+
+        // 2. Autofocus + autoesposizione continui (ignorato se non supportato)
+        var track = stream.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+          track.applyConstraints({
+            advanced: [{ focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' }]
+          }).catch(function(){});
+        }
+
+        // 3. Tap sul video → ciclo di messa a fuoco manuale
+        controls.video.onclick = function() { tapToFocus(controls.video); };
+
+        // 4. Torcia (se il dispositivo la supporta)
+        setupTorch(phase, track);
+
+        // 5. ZXing reader — solo Code 128
         var hints = new Map();
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-        // Ogni scansione crea un nuovo reader per evitare conflitti
-        if (state.codeReader) {
-          try { state.codeReader.reset(); } catch(e) {}
-        }
+        if (state.codeReader) { try { state.codeReader.reset(); } catch(e) {} }
         state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
-        // FIX: Usare decodeFromVideoDevice direttamente (no doppio getUserMedia)
-        // null = seleziona automaticamente la fotocamera posteriore
-        await state.codeReader.decodeFromVideoDevice(
-          null,
-          controls.video,
-          function(result, err) {
-            if (!state.scanning || state.activePhase !== phase) return;
-            if (result && result.text) {
-              onBarcodeDetected(result.text, phase);
-            }
-          }
-        );
+        // 6. Canvas riusabile per il loop
+        var decodeCanvas = document.createElement('canvas');
+        var ctx = decodeCanvas.getContext('2d', { willReadFrequently: true });
 
-      } catch (err) {
+        setDebug('Inquadra il barcode — tocca lo schermo per mettere a fuoco', 'active');
+
+        // 7. Loop di decodifica: prova 0° e 90° a ogni iterazione (~150 ms)
+        state.decodeInterval = setInterval(function() {
+          if (!state.scanning || state.activePhase !== phase) return;
+          var vw = controls.video.videoWidth;
+          var vh = controls.video.videoHeight;
+          if (!vw || !vh) return;
+          frameCount++;
+
+          // -- Tentativo 0° (barre verticali, orientazione standard) --
+          decodeCanvas.width  = vw;
+          decodeCanvas.height = vh;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(controls.video, 0, 0, vw, vh);
+          var decoded = tryDecodeCanvas(decodeCanvas);
+          if (decoded) {
+            var text = typeof decoded.getText === 'function' ? decoded.getText() : decoded.text;
+            console.log('[Scanner] Letto (0°) CODE_128:', text);
+            setDebug('Letto: ' + text, 'active');
+            clearInterval(state.decodeInterval); state.decodeInterval = null;
+            onBarcodeDetected(text, phase);
+            return;
+          }
+
+          // -- Tentativo 90° CW (barre orizzontali — barcode verticale sul doc) --
+          // Matrice 90° CW: x'= -y + vh, y'= x  →  setTransform(0, 1, -1, 0, vh, 0)
+          decodeCanvas.width  = vh;
+          decodeCanvas.height = vw;
+          ctx.setTransform(0, 1, -1, 0, vh, 0);
+          ctx.drawImage(controls.video, 0, 0, vw, vh);
+          decoded = tryDecodeCanvas(decodeCanvas);
+          if (decoded) {
+            var text2 = typeof decoded.getText === 'function' ? decoded.getText() : decoded.text;
+            console.log('[Scanner] Letto (90°) CODE_128:', text2);
+            setDebug('Letto: ' + text2, 'active');
+            clearInterval(state.decodeInterval); state.decodeInterval = null;
+            onBarcodeDetected(text2, phase);
+            return;
+          }
+
+          if (frameCount % 10 === 0) {
+            setDebug('Frame: ' + frameCount + ' | ricerca in corso...', 'active');
+          }
+        }, 150);
+
+      } catch(err) {
         console.error('Scanner error:', err);
         stopScan();
-
         var msg = 'Errore fotocamera';
         if (err && err.name === 'NotAllowedError') msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
         else if (err && err.name === 'NotFoundError') msg = 'Nessuna fotocamera trovata';
@@ -796,25 +987,40 @@
       state.scanning = false;
       state.activePhase = null;
 
+      if (state.decodeInterval) {
+        clearInterval(state.decodeInterval);
+        state.decodeInterval = null;
+      }
       if (state.codeReader) {
-        try { state.codeReader.reset(); } catch (e) {}
+        try { state.codeReader.reset(); } catch(e) {}
         state.codeReader = null;
       }
+      if (state.activeStream) {
+        state.activeStream.getTracks().forEach(function(t) { t.stop(); });
+        state.activeStream = null;
+      }
 
-      ['registrazione', 'prelievo', 'ricezione'].forEach(function(phase) {
-        var controls = getScanControls(phase);
+      ['registrazione', 'prelievo', 'ricezione'].forEach(function(ph) {
+        var controls = getScanControls(ph);
         if (controls.video) {
           controls.video.pause();
-          if (controls.video.srcObject) {
-            controls.video.srcObject.getTracks().forEach(function(t) { t.stop(); });
-            controls.video.srcObject = null;
-          }
+          controls.video.onclick = null;
+          controls.video.srcObject = null;
+        }
+        var torchBtn = document.getElementById('torch-btn-' + TORCH_ABBR[ph]);
+        if (torchBtn) {
+          torchBtn.style.display = 'none';
+          torchBtn.dataset.torchOn = '0';
+          torchBtn.innerHTML = '&#128294;';
+          torchBtn.className = 'btn-torch';
         }
         if (controls.placeholder) controls.placeholder.style.display = '';
         if (controls.button) {
           controls.button.innerHTML = '&#128247; Avvia Scansione';
           controls.button.className = 'btn btn-scan';
         }
+        var dbg = document.getElementById(debugMap[ph]);
+        if (dbg) { dbg.textContent = ''; dbg.className = 'scan-debug'; }
       });
     }
 
