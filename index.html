@@ -42,31 +42,14 @@
     .app-header {
       background: linear-gradient(135deg, var(--primary-dark), var(--primary));
       color: white;
-      padding: 12px 20px;
+      padding: 16px 20px;
       position: sticky;
       top: 0;
       z-index: 100;
       box-shadow: 0 2px 16px rgba(0,0,0,0.15);
     }
-    .app-header-inner {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      max-width: 480px;
-    }
-    .app-header-logo {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-    }
-    .app-header-logo svg {
-      height: 38px;
-      width: auto;
-      display: block;
-    }
-    .app-header-text { flex: 1; min-width: 0; }
-    .app-header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
-    .app-header .subtitle { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+    .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .app-header .subtitle { font-size: 12px; opacity: 0.75; margin-top: 2px; }
 
     .app-content {
       padding: 16px;
@@ -462,34 +445,8 @@
 <body>
 
   <div class="app-header">
-    <div class="app-header-inner">
-      <div class="app-header-logo">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 195 60" aria-label="iNOVA Integrated Innovation">
-          <!-- Red rounded square — dot of the 'i' -->
-          <rect x="1" y="1" width="17" height="17" rx="3" fill="#C1272D"/>
-          <!-- 'i' stem -->
-          <rect x="5.5" y="22" width="8" height="27" rx="2" fill="white"/>
-          <!-- NOVA -->
-          <text x="24" y="49"
-                font-family="'Arial Black', Arial, 'Helvetica Neue', sans-serif"
-                font-weight="900"
-                font-size="37"
-                fill="white">NOVA</text>
-          <!-- INTEGRATED INNOVATION -->
-          <text x="97" y="58"
-                font-family="Arial, 'Helvetica Neue', sans-serif"
-                font-weight="400"
-                font-size="9.5"
-                fill="rgba(255,255,255,0.65)"
-                text-anchor="middle"
-                letter-spacing="1.8">INTEGRATED INNOVATION</text>
-        </svg>
-      </div>
-      <div class="app-header-text">
-        <h1>Conto Lavoro Laccatura</h1>
-        <div class="subtitle">Scanner &amp; Tracciamento</div>
-      </div>
-    </div>
+    <h1>&#128230; Conto Lavoro Laccatura</h1>
+    <div class="subtitle">Scanner &amp; Tracciamento</div>
   </div>
 
   <div class="app-content">
