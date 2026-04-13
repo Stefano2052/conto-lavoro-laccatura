@@ -715,6 +715,8 @@
       scanning: false,
       activePhase: null,
       codeReader: null,
+      decodeInterval: null,
+      activeStream: null,
       prelieviSessione: [],
       ricezioniSessione: [],
       manualMode: { registrazione: false, prelievo: false, ricezione: false }
@@ -837,10 +839,17 @@
 
     // ------------------------------------------------
     // startScan / stopScan
-    // Best practice: decodeFromConstraints (loop nativo ZXing)
-    // + autofocus continuo + tap-to-focus + torcia
+    //
+    // Strategia di decodifica a due livelli:
+    //   1. BarcodeDetector API (nativa, hardware-accelerata, indipendente
+    //      dall'orientazione — disponibile su Chrome ≥ 83 Android,
+    //      Safari ≥ 17 iOS, Edge ≥ 83)
+    //   2. ZXing fallback (TRY_HARDER) per browser senza BarcodeDetector
+    //
+    // Lo stream è sempre gestito manualmente (getUserMedia) per avere
+    // controllo su autofocus, torcia e tap-to-focus.
     // ------------------------------------------------
-    function startScan(phase) {
+    async function startScan(phase) {
       if (state.scanning) { stopScan(); return; }
 
       if (!window.isSecureContext) { showToast('Richiesto HTTPS', 'error'); return; }
@@ -848,82 +857,120 @@
         showToast('Fotocamera non supportata', 'error'); return;
       }
 
-      var doStart = function() {
-        var controls  = getScanControls(phase);
-        var debugEl   = document.getElementById(debugMap[phase]);
-        var frameCount = 0;
+      var controls  = getScanControls(phase);
+      var debugEl   = document.getElementById(debugMap[phase]);
+      var frameCount = 0;
 
-        function setDebug(msg, cls) {
-          if (!debugEl) return;
-          debugEl.textContent = msg;
-          debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
+      function setDebug(msg, cls) {
+        if (!debugEl) return;
+        debugEl.textContent = msg;
+        debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
+      }
+
+      state.scanning = true;
+      state.activePhase = phase;
+      controls.placeholder.style.display = 'none';
+      controls.button.innerHTML = '&#9724; Ferma Scansione';
+      controls.button.className = 'btn btn-stop';
+      setDebug('Avvio fotocamera...');
+
+      try {
+        // 1. Stream: fotocamera posteriore, risoluzione ideale 1280px
+        var stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { min: 640, ideal: 1280 } }
+        });
+        state.activeStream = stream;
+        controls.video.srcObject = stream;
+        await controls.video.play();
+
+        // 2. Autofocus continuo + torcia + tap-to-focus
+        var track = stream.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+          track.applyConstraints({
+            advanced: [{ focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' }]
+          }).catch(function(){});
+        }
+        setupTorch(phase, track);
+        controls.video.onclick = function() { tapToFocus(controls.video); };
+
+        // ── Percorso A: BarcodeDetector (nativo) ─────────────────────────
+        // Gestisce qualsiasi orientazione senza bisogno di rotare l'immagine.
+        var detector = null;
+        if ('BarcodeDetector' in window) {
+          try { detector = new BarcodeDetector({ formats: ['code_128'] }); }
+          catch(e) { detector = null; }
         }
 
-        state.scanning = true;
-        state.activePhase = phase;
-        controls.placeholder.style.display = 'none';
-        controls.button.innerHTML = '&#9724; Ferma Scansione';
-        controls.button.className = 'btn btn-stop';
-        setDebug('Avvio fotocamera...');
-
-        // Appena il video è pronto, applica autofocus e torcia
-        controls.video.addEventListener('loadedmetadata', function onMeta() {
-          controls.video.removeEventListener('loadedmetadata', onMeta);
-          var track = controls.video.srcObject && controls.video.srcObject.getVideoTracks()[0];
-          if (track && track.applyConstraints) {
-            track.applyConstraints({
-              advanced: [{ focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' }]
+        if (detector) {
+          setDebug('Scanner attivo — tocca per mettere a fuoco', 'active');
+          state.decodeInterval = setInterval(function() {
+            if (!state.scanning || state.activePhase !== phase) return;
+            detector.detect(controls.video).then(function(barcodes) {
+              if (!state.scanning || state.activePhase !== phase) return;
+              if (barcodes.length > 0) {
+                var code = barcodes[0].rawValue;
+                console.log('[BarcodeDetector] CODE_128:', code);
+                setDebug('Letto: ' + code, 'active');
+                onBarcodeDetected(code, phase);
+              } else {
+                frameCount++;
+                if (frameCount % 10 === 0) {
+                  setDebug('Frame: ' + frameCount + ' — tocca per mettere a fuoco', 'active');
+                }
+              }
             }).catch(function(){});
+          }, 150);
+
+        // ── Percorso B: ZXing fallback ────────────────────────────────────
+        } else {
+          if (!window.ZXing) {
+            var ok = await ensureZXingLoaded();
+            if (!ok) { showToast('Libreria scanner non caricata', 'error'); stopScan(); return; }
           }
-          setupTorch(phase, track);
-          controls.video.onclick = function() { tapToFocus(controls.video); };
-          setDebug('Inquadra il barcode — tocca lo schermo per mettere a fuoco', 'active');
-        }, { once: true });
+          var hints = new Map();
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+          hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+          if (state.codeReader) { try { state.codeReader.reset(); } catch(e) {} }
+          state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
-        // ZXing: Code 128, TRY_HARDER (gestisce anche rotazione e contrasto difficile)
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-        if (state.codeReader) { try { state.codeReader.reset(); } catch(e) {} }
-        state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
-
-        // decodeFromConstraints: ZXing gestisce stream, video e loop di decodifica
-        state.codeReader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' }, width: { min: 640, ideal: 1280 } } },
-          controls.video,
-          function(result, err) {
+          // decodeFromStream usa lo stream già aperto (no doppio getUserMedia)
+          state.codeReader.decodeFromStream(stream, controls.video, function(result, err) {
             if (!state.scanning || state.activePhase !== phase) return;
             if (result) {
               var text = typeof result.getText === 'function' ? result.getText() : result.text;
-              console.log('[Scanner] CODE_128:', text);
+              console.log('[ZXing] CODE_128:', text);
               setDebug('Letto: ' + text, 'active');
               onBarcodeDetected(text, phase);
               return;
             }
             frameCount++;
             if (frameCount % 30 === 0) {
-              setDebug('Frame: ' + frameCount + ' — tocca lo schermo per mettere a fuoco', 'active');
+              setDebug('Frame: ' + frameCount + ' (ZXing) — tocca per mettere a fuoco', 'active');
             }
-          }
-        ).catch(function(err) {
-          if (!state.scanning) return;
-          stopScan();
-          var msg = 'Errore fotocamera';
-          if (err && err.name === 'NotAllowedError')   msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
-          else if (err && err.name === 'NotFoundError')    msg = 'Nessuna fotocamera trovata';
-          else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
-          else if (err && err.message) msg = err.message;
-          console.error('[Scanner]', err);
-          showToast(msg, 'error');
-        });
-      };
+          }).catch(function(err) {
+            if (!state.scanning) return;
+            stopScan();
+            var msg = 'Errore fotocamera';
+            if (err && err.name === 'NotAllowedError')    msg = 'Permesso fotocamera negato.';
+            else if (err && err.name === 'NotFoundError')    msg = 'Nessuna fotocamera trovata';
+            else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
+            else if (err && err.message) msg = err.message;
+            console.error('[ZXing]', err);
+            showToast(msg, 'error');
+          });
 
-      if (!window.ZXing) {
-        ensureZXingLoaded().then(function(ok) {
-          if (ok) doStart(); else showToast('Libreria scanner non caricata', 'error');
-        });
-      } else {
-        doStart();
+          setDebug('Scanner attivo (ZXing) — tocca per mettere a fuoco', 'active');
+        }
+
+      } catch(err) {
+        stopScan();
+        var msg = 'Errore fotocamera';
+        if (err && err.name === 'NotAllowedError')    msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
+        else if (err && err.name === 'NotFoundError')    msg = 'Nessuna fotocamera trovata';
+        else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
+        else if (err && err.message) msg = err.message;
+        console.error('[Scanner]', err);
+        showToast(msg, 'error');
       }
     }
 
@@ -931,9 +978,17 @@
       state.scanning = false;
       state.activePhase = null;
 
+      if (state.decodeInterval) {
+        clearInterval(state.decodeInterval);
+        state.decodeInterval = null;
+      }
       if (state.codeReader) {
         try { state.codeReader.reset(); } catch(e) {}
         state.codeReader = null;
+      }
+      if (state.activeStream) {
+        state.activeStream.getTracks().forEach(function(t) { t.stop(); });
+        state.activeStream = null;
       }
 
       ['registrazione', 'prelievo', 'ricezione'].forEach(function(ph) {
@@ -941,10 +996,7 @@
         if (controls.video) {
           controls.video.pause();
           controls.video.onclick = null;
-          if (controls.video.srcObject) {
-            controls.video.srcObject.getTracks().forEach(function(t) { t.stop(); });
-            controls.video.srcObject = null;
-          }
+          controls.video.srcObject = null;
         }
         var torchBtn = document.getElementById('torch-btn-' + TORCH_ABBR[ph]);
         if (torchBtn) {
