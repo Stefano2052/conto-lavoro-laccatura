@@ -440,6 +440,21 @@
       cursor: pointer; padding: 8px;
       text-decoration: underline;
     }
+
+    /* Barra diagnostica scanner — visibile durante la scansione */
+    .scan-debug {
+      min-height: 20px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-light);
+      text-align: center;
+      padding: 4px 8px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scan-debug.active { color: var(--accent); }
+    .scan-debug.warn   { color: var(--warning); }
   </style>
 </head>
 <body>
@@ -496,6 +511,7 @@
         <button class="btn btn-scan" id="reg-scan-btn" onclick="startScan('registrazione')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="reg-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('registrazione')">Inserimento manuale</button>
         </div>
@@ -545,6 +561,7 @@
         <button class="btn btn-scan" id="prel-scan-btn" onclick="startScan('prelievo')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="prel-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('prelievo')">Inserimento manuale</button>
         </div>
@@ -588,6 +605,7 @@
         <button class="btn btn-scan" id="ric-scan-btn" onclick="startScan('ricezione')">
           &#128247; Avvia Scansione
         </button>
+        <div class="scan-debug" id="ric-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('ricezione')">Inserimento manuale</button>
         </div>
@@ -669,9 +687,10 @@
       manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
 
-    const videoMap = { registrazione: 'reg-video', prelievo: 'prel-video', ricezione: 'ric-video' };
+    const videoMap     = { registrazione: 'reg-video',        prelievo: 'prel-video',        ricezione: 'ric-video' };
     const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
-    const buttonMap = { registrazione: 'reg-scan-btn', prelievo: 'prel-scan-btn', ricezione: 'ric-scan-btn' };
+    const buttonMap    = { registrazione: 'reg-scan-btn',    prelievo: 'prel-scan-btn',    ricezione: 'ric-scan-btn' };
+    const debugMap     = { registrazione: 'reg-scan-debug',  prelievo: 'prel-scan-debug',  ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -746,6 +765,14 @@
       }
 
       const controls = getScanControls(phase);
+      var debugEl = document.getElementById(debugMap[phase]);
+      var frameCount = 0;
+
+      function setDebug(msg, cls) {
+        if (!debugEl) return;
+        debugEl.textContent = msg;
+        debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
+      }
 
       try {
         state.scanning = true;
@@ -754,27 +781,45 @@
         controls.placeholder.style.display = 'none';
         controls.button.innerHTML = '&#9724; Ferma Scansione';
         controls.button.className = 'btn btn-stop';
+        setDebug('Avvio fotocamera...');
 
-        // FIX: Creare un reader SOLO Code 128 usando DecodeHintType
+        // TRY_HARDER senza restringere il formato: lasciamo che ZXing
+        // provi tutti i formati supportati (Code128, Code39, QR, EAN, ITF…)
+        // così il diagnostic mostra anche qual è il formato effettivo.
         var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-        // Ogni scansione crea un nuovo reader per evitare conflitti
         if (state.codeReader) {
           try { state.codeReader.reset(); } catch(e) {}
         }
         state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
-        // FIX: Usare decodeFromVideoDevice direttamente (no doppio getUserMedia)
-        // null = seleziona automaticamente la fotocamera posteriore
-        await state.codeReader.decodeFromVideoDevice(
-          null,
+        // Forza la fotocamera POSTERIORE (environment) con autofocus.
+        // decodeFromVideoDevice(null) su alcuni dispositivi seleziona il frontale.
+        await state.codeReader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } },
           controls.video,
           function(result, err) {
             if (!state.scanning || state.activePhase !== phase) return;
-            if (result && result.text) {
-              onBarcodeDetected(result.text, phase);
+
+            frameCount++;
+
+            if (result) {
+              // Compatibilità: result.getText() (metodo) o result.text (proprietà)
+              var text = (typeof result.getText === 'function') ? result.getText() : result.text;
+              // Log diagnostico: mostra formato e valore nel debug bar e console
+              var fmt = (typeof result.getBarcodeFormat === 'function')
+                ? result.getBarcodeFormat() : '?';
+              console.log('[Scanner] Letto | formato:', fmt, '| testo:', text);
+              setDebug('Letto (' + fmt + '): ' + text, 'active');
+              onBarcodeDetected(text, phase);
+              return;
+            }
+
+            // Aggiorna il contatore ogni 20 frame (~1 s a 20fps)
+            if (frameCount % 20 === 0) {
+              var errName = (err && err.name) ? err.name : 'scanning';
+              setDebug('Frame: ' + frameCount + ' | ' + errName, errName === 'NotFoundException' ? 'active' : 'warn');
             }
           }
         );
@@ -815,6 +860,8 @@
           controls.button.innerHTML = '&#128247; Avvia Scansione';
           controls.button.className = 'btn btn-scan';
         }
+        var dbg = document.getElementById(debugMap[phase]);
+        if (dbg) { dbg.textContent = ''; dbg.className = 'scan-debug'; }
       });
     }
 
