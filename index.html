@@ -1109,7 +1109,7 @@
           html += '<div class="log-dot chiuso"></div>';
           html += '<div class="log-info">';
           html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">' + escapeHtml(item.dataRicezione || item.dataConsegnaPrevista || '') + '</div>';
+          html += '<div class="log-date">' + escapeHtml(item.dataConsegnaEffettiva || '') + '</div>';
           html += '</div>';
           html += '<div class="log-cancel">&#10005; Annulla</div>';
           html += '</div>';
@@ -1171,9 +1171,9 @@
         var itemsResp = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = itemsResp.data || [];
 
-        var daPrelevare  = items.filter(function(i) { return !i.dataPrelievoEffettivo; });
-        var daBollettare = items.filter(function(i) { return i.dataPrelievoEffettivo && !i.dataEmissioneBolla; });
-        var daRicevere   = items.filter(function(i) { return i.dataPrelievoEffettivo && !i.dataConsegnaEffettiva; });
+        var daPrelevare  = items.filter(function(i) { return !i.dataPrelievo; });
+        var daBollettare = items.filter(function(i) { return i.dataPrelievo && !i.dataEmissioneBolla; });
+        var daRicevere   = items.filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
 
         document.getElementById('stat-da-prelevare').textContent  = daPrelevare.length;
         document.getElementById('stat-da-bollettare').textContent = daBollettare.length;
@@ -1224,8 +1224,8 @@
 
       var items = (_monitorData[tipo] || []).slice();
       items.sort(function(a, b) {
-        var da = a.dataConsegnaPrevista || '';
-        var db = b.dataConsegnaPrevista || '';
+        var da = a.dataSpedizioneCliente || '';
+        var db = b.dataSpedizioneCliente || '';
         return da > db ? -1 : da < db ? 1 : 0;
       });
 
@@ -1238,7 +1238,7 @@
           html += '<div class="log-info">';
           html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
           html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
           html += '</div>';
           html += '</div>';
         });
@@ -1290,8 +1290,8 @@
         var result = await apiCall('getUltimeRegistrazioni', { stato: 'aperto', n: 500 });
         var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'aperto'; });
         items.sort(function(a, b) {
-          var da = a.dataConsegnaPrevista || '';
-          var db = b.dataConsegnaPrevista || '';
+          var da = a.dataSpedizioneCliente || '';
+          var db = b.dataSpedizioneCliente || '';
           return da > db ? -1 : da < db ? 1 : 0;
         });
         if (!items.length) {
@@ -1305,7 +1305,7 @@
           html += '<div class="log-info">';
           html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
           html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
           html += '</div>';
           html += '</div>';
         });
