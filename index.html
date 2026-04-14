@@ -11,45 +11,53 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary: #1A5276;
-      --primary-light: #2980B9;
-      --primary-dark: #0E3A53;
-      --accent: #27AE60;
-      --accent-light: #2ECC71;
-      --warning: #F39C12;
-      --danger: #E74C3C;
-      --bg: #F0F4F8;
-      --card: #FFFFFF;
-      --text: #2C3E50;
-      --text-light: #7F8C8D;
-      --border: #DDE4EA;
-      --shadow: 0 2px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+      --primary: #E79E2F;
+      --primary-dark: #C9831F;
+      --secondary: #A8A29E;
+      --background: #F7F5F2;
+      --surface: #FFFFFF;
+      --border: #E5E2DE;
+      --text-primary: #2F2F2F;
+      --text-secondary: #6F6F6F;
+      --shadow-soft: 0 6px 18px rgba(47, 47, 47, 0.08);
+      --shadow-focus: 0 0 0 3px rgba(231, 158, 47, 0.18);
+      --success-bg: #F7EBD8;
+      --success-text: #8A5A16;
+      --info-bg: #F3EFE8;
+      --info-text: #6F6F6F;
+      --error-bg: #F9E3E0;
+      --error-text: #9B4A43;
+      --selected-bg: #FCF3E3;
+      --hover-row: #FBF9F6;
+      --section-bg: #F5F1EA;
       --radius: 16px;
-      --radius-sm: 10px;
-      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --radius-sm: 12px;
+      --transition: 0.2s ease;
     }
 
     html, body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: Arial, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
       min-height: 100vh;
       -webkit-tap-highlight-color: transparent;
       overflow-x: hidden;
     }
 
     .app-header {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-      color: white;
-      padding: 16px 20px;
+      background: var(--surface);
+      color: var(--text-primary);
+      padding: 14px 16px;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+      border-bottom: 1px solid var(--border);
     }
-    .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-    .app-header .subtitle { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+    @media (min-width: 480px) {
+      .app-header { padding: 14px 20px; }
+    }
+    .app-header h1 { font-size: 18px; font-weight: 700; }
+    .app-header .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
     .app-content {
       padding: 16px;
@@ -57,41 +65,49 @@
       margin: 0 auto;
       padding-bottom: 100px;
     }
+    @media (min-width: 480px) {
+      .app-content { padding: 20px; padding-bottom: 100px; }
+    }
 
     .nav-tabs {
       display: flex;
       gap: 6px;
       margin-bottom: 20px;
-      background: var(--card);
+      background: var(--surface);
       border-radius: var(--radius);
       padding: 5px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
     }
     .nav-tab {
       flex: 1;
       text-align: center;
       padding: 12px 6px;
-      border-radius: 12px;
+      border-radius: var(--radius-sm);
+      min-height: 46px;
       font-size: 12px;
-      font-weight: 600;
-      color: var(--text-light);
+      font-weight: 700;
+      color: var(--text-secondary);
       cursor: pointer;
       transition: var(--transition);
-      border: none;
-      background: none;
+      border: 1px solid transparent;
+      background: var(--surface);
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       -webkit-tap-highlight-color: transparent;
     }
-    .nav-tab .tab-icon { font-size: 20px; line-height: 1; }
+    .nav-tab .tab-icon { font-size: 18px; line-height: 1; }
     .nav-tab.active {
       background: var(--primary);
       color: white;
-      box-shadow: 0 2px 8px rgba(26,82,118,0.3);
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(231, 158, 47, 0.3);
     }
-    .nav-tab:not(.active):active { background: var(--bg); }
+    .nav-tab:not(.active):hover { background: var(--hover-row); }
+    .nav-tab:not(.active):active { background: var(--selected-bg); }
 
     .phase-panel { display: none; animation: fadeIn 0.3s ease; }
     .phase-panel.active { display: block; }
@@ -102,17 +118,18 @@
     }
 
     .card {
-      background: var(--card);
+      background: var(--surface);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 16px;
       margin-bottom: 16px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
     }
 
     .card-title {
       font-size: 14px;
       font-weight: 700;
-      color: var(--primary);
+      color: var(--text-primary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 16px;
@@ -122,106 +139,53 @@
     }
     .card-title .icon { font-size: 18px; }
 
-    .scanner-area {
-      position: relative;
+    /* Anteprima foto scattata — mostrata brevemente prima della lettura */
+    .photo-preview {
       width: 100%;
-      aspect-ratio: 4/3;
-      background: #1a1a2e;
+      max-height: 180px;
+      object-fit: contain;
       border-radius: var(--radius-sm);
-      overflow: hidden;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      display: none;
+      background: var(--background);
     }
-    .scanner-area video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      background: #000;
-    }
-
-    .scanner-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-
-    .scan-guide {
-      width: 75%;
-      height: 30%;
-      border: 2.5px solid rgba(255,255,255,0.7);
-      border-radius: 12px;
-      position: relative;
-    }
-
-    .scan-guide::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 90%;
-      height: 2px;
-      background: var(--danger);
-      opacity: 0.8;
-      animation: scanPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes scanPulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
-
-    .scanner-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255,255,255,0.5);
-      font-size: 14px;
-      gap: 8px;
-    }
-
-    .scanner-placeholder .icon { font-size: 40px; }
 
     .field-group { margin-bottom: 14px; }
 
     .field-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
       margin-bottom: 6px;
+      display: block;
     }
 
     .field-input {
       width: 100%;
-      padding: 14px 16px;
-      border: 2px solid var(--border);
+      padding: 12px 14px;
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
+      min-height: 48px;
       font-size: 16px;
-      font-weight: 600;
-      color: var(--text);
-      background: var(--bg);
+      font-family: Arial, sans-serif;
+      color: var(--text-primary);
+      background: var(--surface);
       transition: var(--transition);
       -webkit-appearance: none;
       appearance: none;
     }
+    .field-input::placeholder { color: var(--text-secondary); }
 
     .field-input:focus {
       outline: none;
-      border-color: var(--primary-light);
-      background: white;
-      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+      border-color: var(--primary);
+      background: var(--surface);
+      box-shadow: var(--shadow-focus);
     }
 
     .field-input.scanned {
-      border-color: var(--accent);
-      background: #F0FFF4;
+      border-color: var(--primary);
+      background: var(--selected-bg);
     }
 
     .field-input[readonly] { cursor: default; }
@@ -231,17 +195,19 @@
       align-items: center;
       gap: 4px;
       font-size: 11px;
-      font-weight: 600;
-      color: var(--accent);
+      font-weight: 700;
+      color: var(--success-text);
       margin-left: 8px;
     }
 
     .btn {
       width: 100%;
-      padding: 16px;
-      border: none;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
+      min-height: 50px;
       font-size: 16px;
+      font-family: Arial, sans-serif;
       font-weight: 700;
       cursor: pointer;
       transition: var(--transition);
@@ -252,66 +218,69 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .btn:active { transform: scale(0.97); }
+    .btn:active { transform: translateY(1px); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      background: var(--primary);
       color: white;
-      box-shadow: 0 4px 12px rgba(26,82,118,0.3);
+      border-color: var(--primary);
     }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
 
     .btn-scan {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      background: var(--primary);
       color: white;
-      box-shadow: 0 4px 12px rgba(26,82,118,0.3);
-      padding: 14px;
-      font-size: 14px;
+      border-color: var(--primary);
+      font-size: 15px;
     }
+    .btn-scan:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
 
     .btn-confirm {
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      background: var(--primary);
       color: white;
-      box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+      border-color: var(--primary);
       margin-top: 8px;
     }
+    .btn-confirm:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
 
     .btn-stop {
-      background: var(--danger);
-      color: white;
-      padding: 14px;
-      font-size: 14px;
+      background: var(--error-bg);
+      color: var(--error-text);
+      border-color: var(--error-text);
+      font-size: 15px;
     }
 
     .btn-reset {
-      background: none;
-      color: var(--text-light);
+      background: var(--surface);
+      color: var(--text-secondary);
+      border-color: var(--border);
       font-size: 14px;
       padding: 12px;
       margin-top: 4px;
     }
+    .btn-reset:hover:not(:disabled) { background: var(--hover-row); }
 
     .toast {
       position: fixed;
       bottom: 90px;
       left: 50%;
       transform: translateX(-50%) translateY(120px);
-      padding: 14px 24px;
+      padding: 12px 20px;
       border-radius: var(--radius-sm);
       font-size: 14px;
-      font-weight: 600;
-      color: white;
+      font-weight: 700;
       z-index: 200;
       transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       max-width: 90%;
       text-align: center;
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--shadow-soft);
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { background: var(--accent); }
-    .toast.error { background: var(--danger); }
-    .toast.warning { background: var(--warning); color: var(--text); }
-    .toast.info { background: var(--primary-light); }
+    .toast.success { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--primary); }
+    .toast.error { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-text); }
+    .toast.warning { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--primary); }
+    .toast.info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--border); }
 
     .stats-row {
       display: grid;
@@ -321,11 +290,12 @@
     }
 
     .stat-card {
-      background: var(--card);
+      background: var(--surface);
       border-radius: var(--radius-sm);
       padding: 14px 10px;
       text-align: center;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
     }
 
     .stat-number {
@@ -337,15 +307,15 @@
 
     .stat-label {
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--text-light);
+      color: var(--text-secondary);
     }
 
-    .stat-card.aperti .stat-number { color: var(--warning); }
-    .stat-card.prelevati .stat-number { color: var(--primary-light); }
-    .stat-card.chiusi .stat-number { color: var(--accent); }
+    .stat-card.aperti .stat-number { color: var(--primary); }
+    .stat-card.prelevati .stat-number { color: var(--primary-dark); }
+    .stat-card.chiusi .stat-number { color: var(--success-text); }
 
     .log-item {
       display: flex;
@@ -356,6 +326,16 @@
     }
     .log-item:last-child { border-bottom: none; }
 
+    .log-item-clickable { cursor: pointer; border-radius: 8px; transition: var(--transition); }
+    .log-item-clickable:hover { background: var(--hover-row); margin: 0 -4px; padding: 12px 4px; }
+    .log-item-clickable:active { background: var(--selected-bg); }
+    .log-cancel {
+      color: var(--error-text);
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
     .log-dot {
       width: 10px;
       height: 10px;
@@ -363,9 +343,9 @@
       flex-shrink: 0;
     }
 
-    .log-dot.aperto { background: var(--warning); }
-    .log-dot.prelevato { background: var(--primary-light); }
-    .log-dot.chiuso { background: var(--accent); }
+    .log-dot.aperto { background: var(--primary); }
+    .log-dot.prelevato { background: var(--primary-dark); }
+    .log-dot.chiuso { background: var(--success-text); }
 
     .log-info { flex: 1; min-width: 0; }
 
@@ -373,11 +353,12 @@
       font-size: 13px;
       font-weight: 700;
       word-break: break-word;
+      color: var(--text-primary);
     }
 
     .log-date {
       font-size: 11px;
-      color: var(--text-light);
+      color: var(--text-secondary);
       margin-top: 2px;
     }
 
@@ -389,9 +370,9 @@
       flex-shrink: 0;
     }
 
-    .log-stato.aperto { background: #FFF3CD; color: #856404; }
-    .log-stato.prelevato { background: #CCE5FF; color: #004085; }
-    .log-stato.chiuso { background: #D4EDDA; color: #155724; }
+    .log-stato.aperto { background: var(--success-bg); color: var(--success-text); }
+    .log-stato.prelevato { background: var(--info-bg); color: var(--info-text); }
+    .log-stato.chiuso { background: var(--section-bg); color: var(--text-secondary); }
 
     .steps {
       display: flex;
@@ -413,15 +394,15 @@
       font-size: 13px;
       font-weight: 700;
       border: 2px solid var(--border);
-      color: var(--text-light);
-      background: white;
+      color: var(--text-secondary);
+      background: var(--surface);
       transition: var(--transition);
     }
 
     .step-dot.active { border-color: var(--primary); background: var(--primary); color: white; }
-    .step-dot.done { border-color: var(--accent); background: var(--accent); color: white; }
+    .step-dot.done { border-color: var(--success-text); background: var(--success-bg); color: var(--success-text); }
     .step-line { width: 40px; height: 2px; background: var(--border); transition: var(--transition); }
-    .step-line.done { background: var(--accent); }
+    .step-line.done { background: var(--primary); }
 
     .spinner {
       width: 20px; height: 20px;
@@ -435,11 +416,27 @@
     .manual-toggle { text-align: center; margin-top: 8px; }
     .manual-toggle button {
       background: none; border: none;
-      color: var(--primary-light);
-      font-size: 13px; font-weight: 600;
+      color: var(--primary);
+      font-size: 13px; font-weight: 700;
+      font-family: Arial, sans-serif;
       cursor: pointer; padding: 8px;
       text-decoration: underline;
     }
+
+    /* Barra diagnostica scanner — visibile durante la scansione */
+    .scan-debug {
+      min-height: 20px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 4px 8px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scan-debug.active { color: var(--success-text); }
+    .scan-debug.warn   { color: var(--primary-dark); }
   </style>
 </head>
 <body>
@@ -485,17 +482,12 @@
           <span class="icon">&#128247;</span>
           <span id="reg-scanner-title">Scansiona ODV</span>
         </div>
-        <div class="scanner-area">
-          <video id="reg-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
-          <div class="scanner-placeholder" id="reg-placeholder">
-            <span class="icon">&#128247;</span>
-            <span>Premi per attivare la fotocamera</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="reg-scan-btn" onclick="startScan('registrazione')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-reg" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'registrazione')">
+        <img id="preview-reg" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="reg-scan-btn" onclick="capturePhoto('registrazione')">
+          &#128247; Scatta foto
         </button>
+        <div class="scan-debug" id="reg-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('registrazione')">Inserimento manuale</button>
         </div>
@@ -534,39 +526,35 @@
           <span class="icon">&#128247;</span>
           <span>Scansiona ODV per prelievo</span>
         </div>
-        <div class="scanner-area">
-          <video id="prel-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
-          <div class="scanner-placeholder" id="prel-placeholder">
-            <span class="icon">&#128230;</span>
-            <span>Scansiona ODV dal carrello</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="prel-scan-btn" onclick="startScan('prelievo')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-prel" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'prelievo')">
+        <img id="preview-prel" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="prel-scan-btn" onclick="capturePhoto('prelievo')">
+          &#128247; Scatta foto
         </button>
+        <div class="scan-debug" id="prel-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('prelievo')">Inserimento manuale</button>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="prel-manual-card" style="display:none">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
-          <input type="text" class="field-input" id="prel-odv" placeholder="Scansiona il codice ODV" readonly>
+          <input type="text" class="field-input" id="prel-odv" placeholder="Digita il codice ODV">
         </div>
-        <button class="btn btn-confirm" id="prel-confirm-btn" onclick="confermaPrelievo()" disabled>
+        <button class="btn btn-confirm" id="prel-confirm-btn" onclick="confermaPrelievo(null)" disabled>
           &#128230; Conferma Prelievo
         </button>
-        <button class="btn btn-reset" onclick="resetPrelievo()">Resetta</button>
       </div>
 
-      <div class="card" id="prel-log-card" style="display:none">
+      <div class="card" id="prel-log-card">
         <div class="card-title">
           <span class="icon">&#128203;</span>
-          <span>Prelievi di questa sessione</span>
+          <span>Ultimi prelievi</span>
         </div>
-        <div id="prel-session-log"></div>
+        <div id="prel-session-log">
+          <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
+        </div>
       </div>
     </div>
 
@@ -577,39 +565,35 @@
           <span class="icon">&#128247;</span>
           <span>Scansiona ODV per ricezione</span>
         </div>
-        <div class="scanner-area">
-          <video id="ric-video" playsinline muted></video>
-          <div class="scanner-overlay"><div class="scan-guide"></div></div>
-          <div class="scanner-placeholder" id="ric-placeholder">
-            <span class="icon">&#9989;</span>
-            <span>Scansiona ODV dal carrello rientrato</span>
-          </div>
-        </div>
-        <button class="btn btn-scan" id="ric-scan-btn" onclick="startScan('ricezione')">
-          &#128247; Avvia Scansione
+        <input type="file" id="file-ric" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'ricezione')">
+        <img id="preview-ric" class="photo-preview" alt="">
+        <button class="btn btn-scan" id="ric-scan-btn" onclick="capturePhoto('ricezione')">
+          &#128247; Scatta foto
         </button>
+        <div class="scan-debug" id="ric-scan-debug"></div>
         <div class="manual-toggle">
           <button onclick="toggleManualInput('ricezione')">Inserimento manuale</button>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="ric-manual-card" style="display:none">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
-          <input type="text" class="field-input" id="ric-odv" placeholder="Scansiona il codice ODV" readonly>
+          <input type="text" class="field-input" id="ric-odv" placeholder="Digita il codice ODV">
         </div>
-        <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione()" disabled>
+        <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione(null)" disabled>
           &#9989; Conferma Ricezione
         </button>
-        <button class="btn btn-reset" onclick="resetRicezione()">Resetta</button>
       </div>
 
-      <div class="card" id="ric-log-card" style="display:none">
+      <div class="card" id="ric-log-card">
         <div class="card-title">
           <span class="icon">&#128203;</span>
-          <span>Ricezioni di questa sessione</span>
+          <span>Ultime ricezioni</span>
         </div>
-        <div id="ric-session-log"></div>
+        <div id="ric-session-log">
+          <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
+        </div>
       </div>
     </div>
 
@@ -661,17 +645,14 @@
     const state = {
       currentPhase: 'registrazione',
       regStep: 1,
-      scanning: false,
-      activePhase: null,
-      codeReader: null,
       prelieviSessione: [],
       ricezioniSessione: [],
       manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
 
-    const videoMap = { registrazione: 'reg-video', prelievo: 'prel-video', ricezione: 'ric-video' };
-    const placeholderMap = { registrazione: 'reg-placeholder', prelievo: 'prel-placeholder', ricezione: 'ric-placeholder' };
-    const buttonMap = { registrazione: 'reg-scan-btn', prelievo: 'prel-scan-btn', ricezione: 'ric-scan-btn' };
+    const PHASE_ABBR   = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
+    const buttonMap    = { registrazione: 'reg-scan-btn',   prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
+    const debugMap     = { registrazione: 'reg-scan-debug', prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -705,6 +686,8 @@
       document.querySelectorAll('.phase-panel').forEach(function(p) { p.classList.remove('active'); });
       document.getElementById('panel-' + phase).classList.add('active');
       if (phase === 'monitor') aggiornaMonitor();
+      if (phase === 'prelievo') caricaStoricoPrelievi();
+      if (phase === 'ricezione') caricaStoricoRicezioni();
     }
 
     // ================================================
@@ -723,110 +706,104 @@
     }
 
     // ================================================
-    // SCANNER — CODE 128 ONLY
+    // SCANNER — lettura codice a barre da foto
     // ================================================
-    function getScanControls(phase) {
-      return {
-        video: document.getElementById(videoMap[phase]),
-        placeholder: document.getElementById(placeholderMap[phase]),
-        button: document.getElementById(buttonMap[phase])
-      };
+
+    // Apre la fotocamera nativa del dispositivo per scattare una foto
+    function capturePhoto(phase) {
+      var input = document.getElementById('file-' + PHASE_ABBR[phase]);
+      input.value = '';   // reset per permettere la stessa foto due volte
+      input.click();
     }
 
-    async function startScan(phase) {
-      if (state.scanning) { stopScan(); return; }
+    // Viene chiamata quando l'utente ha scattato/scelto una foto
+    async function processPhotoFile(inputEl, phase) {
+      var file = inputEl.files && inputEl.files[0];
+      if (!file) return;
 
-      if (!window.isSecureContext) { showToast('Richiesto HTTPS', 'error'); return; }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('Fotocamera non supportata', 'error'); return;
-      }
-      if (!window.ZXing) {
-        var loaded = await ensureZXingLoaded();
-        if (!loaded) { showToast('Libreria scanner non caricata', 'error'); return; }
+      var abbr   = PHASE_ABBR[phase];
+      var debugEl = document.getElementById(debugMap[phase]);
+      var btnEl   = document.getElementById(buttonMap[phase]);
+      var previewEl = document.getElementById('preview-' + abbr);
+
+      function setDebug(msg, cls) {
+        if (!debugEl) return;
+        debugEl.textContent = msg;
+        debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
       }
 
-      const controls = getScanControls(phase);
+      // Mostra anteprima e stato "lettura in corso"
+      var objectUrl = URL.createObjectURL(file);
+      if (previewEl) { previewEl.src = objectUrl; previewEl.style.display = 'block'; }
+      if (btnEl) btnEl.disabled = true;
+      setDebug('Lettura codice a barre...', 'active');
 
       try {
-        state.scanning = true;
-        state.activePhase = phase;
+        var bitmap = await createImageBitmap(file);
+        var code = null;
 
-        controls.placeholder.style.display = 'none';
-        controls.button.innerHTML = '&#9724; Ferma Scansione';
-        controls.button.className = 'btn btn-stop';
-
-        // FIX: Creare un reader SOLO Code 128 usando DecodeHintType
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-        // Ogni scansione crea un nuovo reader per evitare conflitti
-        if (state.codeReader) {
-          try { state.codeReader.reset(); } catch(e) {}
+        // ── Percorso A: BarcodeDetector (nativo, gestisce qualsiasi orientazione)
+        if (!code && 'BarcodeDetector' in window) {
+          try {
+            var det = new BarcodeDetector({ formats: ['code_128'] });
+            var found = await det.detect(bitmap);
+            if (found.length > 0) code = found[0].rawValue;
+          } catch(e) {}
         }
-        state.codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
-        // FIX: Usare decodeFromVideoDevice direttamente (no doppio getUserMedia)
-        // null = seleziona automaticamente la fotocamera posteriore
-        await state.codeReader.decodeFromVideoDevice(
-          null,
-          controls.video,
-          function(result, err) {
-            if (!state.scanning || state.activePhase !== phase) return;
-            if (result && result.text) {
-              onBarcodeDetected(result.text, phase);
-            }
+        // ── Percorso B: ZXing — se BarcodeDetector non disponibile o non ha trovato nulla
+        if (!code) {
+          if (!window.ZXing) await ensureZXingLoaded();
+          if (window.ZXing) {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width  = bitmap.width;
+              canvas.height = bitmap.height;
+              canvas.getContext('2d').drawImage(bitmap, 0, 0);
+              var hints = new Map();
+              hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+              hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+              var reader = new ZXing.BrowserMultiFormatReader(hints);
+              var res = await reader.decodeFromCanvas(canvas);
+              if (res) code = typeof res.getText === 'function' ? res.getText() : res.text;
+            } catch(e) {}
           }
-        );
+        }
 
-      } catch (err) {
-        console.error('Scanner error:', err);
-        stopScan();
+        if (code) {
+          setDebug('Letto: ' + code, 'active');
+          onBarcodeDetected(code, phase);
+        } else {
+          setDebug('Nessun codice trovato — riprova', '');
+          showToast('Nessun codice trovato nella foto — riprova', 'warning');
+        }
 
-        var msg = 'Errore fotocamera';
-        if (err && err.name === 'NotAllowedError') msg = 'Permesso fotocamera negato. Controlla le impostazioni del browser.';
-        else if (err && err.name === 'NotFoundError') msg = 'Nessuna fotocamera trovata';
-        else if (err && err.name === 'NotReadableError') msg = 'Fotocamera occupata';
-        else if (err && err.message) msg = err.message;
-        showToast(msg, 'error');
+      } catch(err) {
+        console.error('[Photo scan]', err);
+        setDebug('Errore lettura — riprova', '');
+        showToast('Errore durante la lettura della foto', 'error');
+      } finally {
+        if (btnEl) btnEl.disabled = false;
+        URL.revokeObjectURL(objectUrl);
+        // Nasconde l'anteprima dopo 2 s
+        if (previewEl) setTimeout(function() { previewEl.style.display = 'none'; }, 2000);
       }
     }
 
-    function stopScan() {
-      state.scanning = false;
-      state.activePhase = null;
-
-      if (state.codeReader) {
-        try { state.codeReader.reset(); } catch (e) {}
-        state.codeReader = null;
-      }
-
-      ['registrazione', 'prelievo', 'ricezione'].forEach(function(phase) {
-        var controls = getScanControls(phase);
-        if (controls.video) {
-          controls.video.pause();
-          if (controls.video.srcObject) {
-            controls.video.srcObject.getTracks().forEach(function(t) { t.stop(); });
-            controls.video.srcObject = null;
-          }
-        }
-        if (controls.placeholder) controls.placeholder.style.display = '';
-        if (controls.button) {
-          controls.button.innerHTML = '&#128247; Avvia Scansione';
-          controls.button.className = 'btn btn-scan';
-        }
-      });
-    }
+    // No-op: mantenuto per compatibilità con le chiamate esistenti nei reset
+    function stopScan() {}
 
     function onBarcodeDetected(code, phase) {
       var cleanCode = String(code || '').trim();
       if (!cleanCode) return;
 
-      // Validazione: i codici ODV e CL contengono lettere e trattini
-      // Se il risultato contiene solo numeri e non contiene "-", probabilmente
-      // e' stato letto con il formato sbagliato — scartare
-      if (/^\d+$/.test(cleanCode) && cleanCode.length < 12) {
-        console.warn('Scartato risultato sospetto (solo numeri):', cleanCode);
+      // Rifiuta codici con caratteri non validi (=, ;, <, :, ! ecc.)
+      // causati da errori di charset Code 128 — accetta solo [A-Z0-9-]
+      if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+        console.warn('[Scan] Scartato: formato non valido:', cleanCode);
+        var dbg = document.getElementById(debugMap[phase]);
+        if (dbg) { dbg.textContent = 'Codice non valido — riprova'; dbg.className = 'scan-debug warn'; }
+        showToast('Codice non riconosciuto — riprova', 'warning');
         return;
       }
 
@@ -837,18 +814,10 @@
           handleRegScan(cleanCode);
           break;
         case 'prelievo':
-          stopScan();
-          document.getElementById('prel-odv').value = cleanCode;
-          document.getElementById('prel-odv').classList.add('scanned');
-          document.getElementById('prel-confirm-btn').disabled = false;
-          showToast('ODV scansionato: ' + cleanCode, 'success');
+          confermaPrelievo(cleanCode);
           break;
         case 'ricezione':
-          stopScan();
-          document.getElementById('ric-odv').value = cleanCode;
-          document.getElementById('ric-odv').classList.add('scanned');
-          document.getElementById('ric-confirm-btn').disabled = false;
-          showToast('ODV scansionato: ' + cleanCode, 'success');
+          confermaRicezione(cleanCode);
           break;
       }
     }
@@ -946,93 +915,148 @@
     // ================================================
     // FASE 2 — PRELIEVO
     // ================================================
-    async function confermaPrelievo() {
-      var odv = document.getElementById('prel-odv').value.trim();
-      if (!odv) { showToast('Scansiona prima un ODV', 'warning'); return; }
+    async function confermaPrelievo(odv) {
+      if (!odv) odv = (document.getElementById('prel-odv').value || '').trim();
+      if (!odv) { showToast('Scansiona o digita un ODV', 'warning'); return; }
       var btn = document.getElementById('prel-confirm-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
+      if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Salvataggio...'; }
       try {
         var result = await apiCall('registraPrelievo', { codiceODV: odv });
         if (result.success) {
           showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          state.prelieviSessione.unshift({ odv: odv, cl: result.data.cl, ora: result.data.dataPrelievo });
-          updateSessionLog('prel');
-          resetPrelievo();
+          if (state.manualMode.prelievo) document.getElementById('prel-odv').value = '';
+          if (btn) { btn.disabled = true; btn.innerHTML = '&#128230; Conferma Prelievo'; }
+          caricaStoricoPrelievi();
         } else {
           showToast(result.message || 'Errore', 'error');
-          btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo';
+          if (btn) { btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo'; }
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo';
+        if (btn) { btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo'; }
       }
-    }
-
-    function resetPrelievo() {
-      stopScan();
-      document.getElementById('prel-odv').value = '';
-      document.getElementById('prel-odv').classList.remove('scanned');
-      document.getElementById('prel-confirm-btn').disabled = true;
-      document.getElementById('prel-confirm-btn').innerHTML = '&#128230; Conferma Prelievo';
-      if (state.manualMode.prelievo) toggleManualInput('prelievo');
     }
 
     // ================================================
     // FASE 3 — RICEZIONE
     // ================================================
-    async function confermaRicezione() {
-      var odv = document.getElementById('ric-odv').value.trim();
-      if (!odv) { showToast('Scansiona prima un ODV', 'warning'); return; }
+    async function confermaRicezione(odv) {
+      if (!odv) odv = (document.getElementById('ric-odv').value || '').trim();
+      if (!odv) { showToast('Scansiona o digita un ODV', 'warning'); return; }
       var btn = document.getElementById('ric-confirm-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
+      if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Salvataggio...'; }
       try {
         var result = await apiCall('registraRicezione', { codiceODV: odv });
         if (result.success) {
           showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          state.ricezioniSessione.unshift({ odv: odv, cl: result.data.cl, ora: result.data.dataRicezione });
-          updateSessionLog('ric');
-          resetRicezione();
+          if (state.manualMode.ricezione) document.getElementById('ric-odv').value = '';
+          if (btn) { btn.disabled = true; btn.innerHTML = '&#9989; Conferma Ricezione'; }
+          caricaStoricoRicezioni();
         } else {
           showToast(result.message || 'Errore', 'error');
-          btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione';
+          if (btn) { btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione'; }
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione';
+        if (btn) { btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione'; }
       }
     }
 
-    function resetRicezione() {
-      stopScan();
-      document.getElementById('ric-odv').value = '';
-      document.getElementById('ric-odv').classList.remove('scanned');
-      document.getElementById('ric-confirm-btn').disabled = true;
-      document.getElementById('ric-confirm-btn').innerHTML = '&#9989; Conferma Ricezione';
-      if (state.manualMode.ricezione) toggleManualInput('ricezione');
+    // ================================================
+    // STORICO PRELIEVI / RICEZIONI (da API)
+    // ================================================
+    async function caricaStoricoPrelievi() {
+      var container = document.getElementById('prel-session-log');
+      container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>';
+      try {
+        var result = await apiCall('getUltimeRegistrazioni', { stato: 'prelevato', n: 20 });
+        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'prelevato'; });
+        if (!items.length) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
+          return;
+        }
+        var html = '';
+        items.forEach(function(item) {
+          var odv = String(item.odv || '');
+          html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaPrelievo(\'' + odv + '\')">';
+          html += '<div class="log-dot prelevato"></div>';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || item.dataConsegnaPrevista || '') + '</div>';
+          html += '</div>';
+          html += '<div class="log-cancel">&#10005; Annulla</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
+      }
     }
 
-    // ================================================
-    // SESSION LOG
-    // ================================================
-    function updateSessionLog(prefix) {
-      var items = prefix === 'prel' ? state.prelieviSessione : state.ricezioniSessione;
-      var container = document.getElementById(prefix + '-session-log');
-      var card = document.getElementById(prefix + '-log-card');
-      if (items.length === 0) { card.style.display = 'none'; return; }
-      card.style.display = 'block';
-      var html = '';
-      items.forEach(function(item) {
-        var dotClass = prefix === 'prel' ? 'prelevato' : 'chiuso';
-        html += '<div class="log-item">';
-        html += '<div class="log-dot ' + dotClass + '"></div>';
-        html += '<div class="log-info">';
-        html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv) + ' &rarr; CL: ' + escapeHtml(item.cl) + '</div>';
-        html += '<div class="log-date">' + escapeHtml(item.ora) + '</div>';
-        html += '</div></div>';
-      });
-      container.innerHTML = html;
+    async function caricaStoricoRicezioni() {
+      var container = document.getElementById('ric-session-log');
+      container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>';
+      try {
+        var result = await apiCall('getUltimeRegistrazioni', { stato: 'chiuso', n: 20 });
+        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'chiuso'; });
+        if (!items.length) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
+          return;
+        }
+        var html = '';
+        items.forEach(function(item) {
+          var odv = String(item.odv || '');
+          html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaRicezione(\'' + odv + '\')">';
+          html += '<div class="log-dot chiuso"></div>';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">' + escapeHtml(item.dataRicezione || item.dataConsegnaPrevista || '') + '</div>';
+          html += '</div>';
+          html += '<div class="log-cancel">&#10005; Annulla</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
+      }
+    }
+
+    function chiediAnnullaPrelievo(odv) {
+      if (!confirm('Annullare il prelievo di ODV: ' + odv + '?')) return;
+      annullaPrelievo(odv);
+    }
+
+    async function annullaPrelievo(odv) {
+      try {
+        var result = await apiCall('annullaPrelievo', { codiceODV: odv });
+        if (result.success) {
+          showToast('Prelievo annullato: ' + odv, 'success');
+          caricaStoricoPrelievi();
+        } else {
+          showToast(result.message || 'Errore annullamento', 'error');
+        }
+      } catch (err) {
+        showToast('Errore: ' + err.message, 'error');
+      }
+    }
+
+    function chiediAnnullaRicezione(odv) {
+      if (!confirm('Annullare la ricezione di ODV: ' + odv + '?')) return;
+      annullaRicezione(odv);
+    }
+
+    async function annullaRicezione(odv) {
+      try {
+        var result = await apiCall('annullaRicezione', { codiceODV: odv });
+        if (result.success) {
+          showToast('Ricezione annullata: ' + odv, 'success');
+          caricaStoricoRicezioni();
+        } else {
+          showToast(result.message || 'Errore annullamento', 'error');
+        }
+      } catch (err) {
+        showToast('Errore: ' + err.message, 'error');
+      }
     }
 
     // ================================================
@@ -1101,31 +1125,31 @@
         return;
       }
       if (phase === 'prelievo') {
-        document.getElementById('prel-odv').readOnly = !isManual;
         if (isManual) {
           stopScan();
           document.getElementById('prel-scanner-card').style.display = 'none';
-          document.getElementById('prel-odv').placeholder = 'Digita il codice ODV';
+          document.getElementById('prel-manual-card').style.display = 'block';
+          document.getElementById('prel-odv').focus();
         } else {
           document.getElementById('prel-scanner-card').style.display = '';
-          document.getElementById('prel-odv').placeholder = 'Scansiona il codice ODV';
-          document.getElementById('prel-odv').readOnly = true;
+          document.getElementById('prel-manual-card').style.display = 'none';
+          document.getElementById('prel-odv').value = '';
+          document.getElementById('prel-confirm-btn').disabled = true;
         }
-        document.getElementById('prel-confirm-btn').disabled = !document.getElementById('prel-odv').value.trim();
         return;
       }
       if (phase === 'ricezione') {
-        document.getElementById('ric-odv').readOnly = !isManual;
         if (isManual) {
           stopScan();
           document.getElementById('ric-scanner-card').style.display = 'none';
-          document.getElementById('ric-odv').placeholder = 'Digita il codice ODV';
+          document.getElementById('ric-manual-card').style.display = 'block';
+          document.getElementById('ric-odv').focus();
         } else {
           document.getElementById('ric-scanner-card').style.display = '';
-          document.getElementById('ric-odv').placeholder = 'Scansiona il codice ODV';
-          document.getElementById('ric-odv').readOnly = true;
+          document.getElementById('ric-manual-card').style.display = 'none';
+          document.getElementById('ric-odv').value = '';
+          document.getElementById('ric-confirm-btn').disabled = true;
         }
-        document.getElementById('ric-confirm-btn').disabled = !document.getElementById('ric-odv').value.trim();
       }
     }
 
@@ -1154,10 +1178,12 @@
       document.getElementById('reg-odv').addEventListener('input', checkRegReady);
       document.getElementById('reg-cl').addEventListener('input', checkRegReady);
       document.getElementById('prel-odv').addEventListener('input', function() {
-        document.getElementById('prel-confirm-btn').disabled = !this.value.trim();
+        var btn = document.getElementById('prel-confirm-btn');
+        if (btn) btn.disabled = !this.value.trim();
       });
       document.getElementById('ric-odv').addEventListener('input', function() {
-        document.getElementById('ric-confirm-btn').disabled = !this.value.trim();
+        var btn = document.getElementById('ric-confirm-btn');
+        if (btn) btn.disabled = !this.value.trim();
       });
     });
   </script>
