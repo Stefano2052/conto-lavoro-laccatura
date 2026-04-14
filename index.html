@@ -155,17 +155,6 @@
     }
     .card-title .icon { font-size: 18px; }
 
-    /* Anteprima foto scattata — mostrata brevemente prima della lettura */
-    .photo-preview {
-      width: 100%;
-      max-height: 180px;
-      object-fit: contain;
-      border-radius: var(--radius-sm);
-      margin-bottom: 10px;
-      display: none;
-      background: var(--background);
-    }
-
     .field-group { margin-bottom: 14px; }
 
     .field-label {
@@ -244,14 +233,6 @@
     }
     .btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
 
-    .btn-scan {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-      font-size: 15px;
-    }
-    .btn-scan:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
-
     .btn-confirm {
       background: var(--primary);
       color: white;
@@ -259,13 +240,6 @@
       margin-top: 8px;
     }
     .btn-confirm:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
-
-    .btn-stop {
-      background: var(--error-bg);
-      color: var(--error-text);
-      border-color: var(--error-text);
-      font-size: 15px;
-    }
 
     .btn-reset {
       background: var(--surface);
@@ -480,16 +454,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .manual-toggle { text-align: center; margin-top: 8px; }
-    .manual-toggle button {
-      background: none; border: none;
-      color: var(--primary);
-      font-size: 13px; font-weight: 700;
-      font-family: Arial, sans-serif;
-      cursor: pointer; padding: 8px;
-      text-decoration: underline;
-    }
-
     /* Barra diagnostica scanner — visibile durante la scansione */
 
     .scan-debug {
@@ -590,7 +554,7 @@
       <div class="card" id="prel-log-card">
         <div class="card-title">Ultimi prelievi</div>
         <div id="prel-session-log">
-          <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
+          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
         </div>
       </div>
     </div>
@@ -623,7 +587,7 @@
       <div class="card" id="ric-log-card">
         <div class="card-title">Ultime ricezioni</div>
         <div id="ric-session-log">
-          <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
+          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
         </div>
       </div>
     </div>
@@ -654,7 +618,7 @@
       <div class="card">
         <div class="card-title">Ultime attivit&agrave;</div>
         <div id="activity-log">
-          <div style="text-align:center; color:var(--text-light); padding:20px; font-size:14px;">
+          <div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:14px;">
             Caricamento...
           </div>
         </div>
@@ -688,13 +652,7 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbxhG7eFPAvDaGmFky_mVDyVanW-2F20jvjftrNnytBjITw-s-yriYegDYc_kBNQT7sc/exec';
     const ZXING_FALLBACK_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
 
-    const state = {
-      currentPhase: 'registrazione',
-      regStep: 1,
-      prelieviSessione: [],
-      ricezioniSessione: [],
-      manualMode: { registrazione: false, prelievo: false, ricezione: false }
-    };
+    const state = { currentPhase: 'registrazione' };
 
     var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
     var _successOverlayTimer = null;
@@ -704,9 +662,9 @@
       return String(dateStr).split('T')[0].split(' ')[0];
     }
 
-    const PHASE_ABBR   = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
-    const buttonMap    = { registrazione: 'reg-scan-btn',   prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
-    const debugMap     = { registrazione: 'reg-scan-debug', prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
+    const PHASE_ABBR = { prelievo: 'prel', ricezione: 'ric' };
+    const buttonMap  = { prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
+    const debugMap   = { prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -733,7 +691,6 @@
     // NAVIGAZIONE
     // ================================================
     function switchPhase(phase) {
-      stopScan();
       state.currentPhase = phase;
       document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
       document.getElementById('tab-' + phase).classList.add('active');
@@ -775,10 +732,8 @@
       var file = inputEl.files && inputEl.files[0];
       if (!file) return;
 
-      var abbr   = PHASE_ABBR[phase];
       var debugEl = document.getElementById(debugMap[phase]);
       var btnEl   = document.getElementById(buttonMap[phase]);
-      var previewEl = document.getElementById('preview-' + abbr);
 
       function setDebug(msg, cls) {
         if (!debugEl) return;
@@ -786,9 +741,6 @@
         debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
       }
 
-      // Mostra anteprima e stato "lettura in corso"
-      var objectUrl = URL.createObjectURL(file);
-      if (previewEl) { previewEl.src = objectUrl; previewEl.style.display = 'block'; }
       if (btnEl) btnEl.disabled = true;
       setDebug('Lettura codice a barre...', 'active');
 
@@ -838,14 +790,8 @@
         showToast('Errore durante la lettura della foto', 'error');
       } finally {
         if (btnEl) btnEl.disabled = false;
-        URL.revokeObjectURL(objectUrl);
-        // Nasconde l'anteprima dopo 2 s
-        if (previewEl) setTimeout(function() { previewEl.style.display = 'none'; }, 2000);
       }
     }
-
-    // No-op: mantenuto per compatibilità con le chiamate esistenti nei reset
-    function stopScan() {}
 
     function onBarcodeDetected(code, phase) {
       var cleanCode = String(code || '').trim();
@@ -863,17 +809,8 @@
 
       if (navigator.vibrate) navigator.vibrate(100);
 
-      switch (phase) {
-        case 'registrazione':
-          handleRegScan(cleanCode);
-          break;
-        case 'prelievo':
-          confermaPrelievo(cleanCode);
-          break;
-        case 'ricezione':
-          confermaRicezione(cleanCode);
-          break;
-      }
+      if (phase === 'prelievo')      confermaPrelievo(cleanCode);
+      else if (phase === 'ricezione') confermaRicezione(cleanCode);
     }
 
     // ================================================
@@ -979,7 +916,7 @@
       btn.innerHTML = '<div class="spinner"></div> Salvataggio...';
 
       try {
-        var result = await apiCall('registraODV', { codiceODV: odv, codiceCL: cl, dataConsegnaPrevista: data });
+        var result = await apiCall('registraODV', { codiceODV: odv, codiceCL: cl, dataSpedizioneCliente: data });
         if (result.success) {
           showSuccessOverlay('ODV: ' + odv + '\nCL: ' + cl);
           resetRegistrazione();
@@ -989,7 +926,7 @@
         }
       } catch (err) {
         showToast('Errore di connessione: ' + err.message, 'error');
-        btn.disabled = false; btn.innerHTML = '&#10004; Conferma Registrazione';
+        btn.disabled = false; btn.innerHTML = 'Conferma';
       }
     }
 
@@ -1066,12 +1003,12 @@
     // ================================================
     async function caricaStoricoPrelievi() {
       var container = document.getElementById('prel-session-log');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
         var result = await apiCall('getUltimeRegistrazioni', { stato: 'prelevato', n: 20 });
         var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'prelevato'; });
         if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
+          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
           return;
         }
         var html = '';
@@ -1088,18 +1025,18 @@
         });
         container.innerHTML = html;
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
 
     async function caricaStoricoRicezioni() {
       var container = document.getElementById('ric-session-log');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
         var result = await apiCall('getUltimeRegistrazioni', { stato: 'chiuso', n: 20 });
         var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'chiuso'; });
         if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
+          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
           return;
         }
         var html = '';
@@ -1116,7 +1053,7 @@
         });
         container.innerHTML = html;
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
 
@@ -1173,7 +1110,7 @@
 
         var daPrelevare  = items.filter(function(i) { return !i.dataPrelievo; });
         var daBollettare = items.filter(function(i) { return i.dataPrelievo && !i.dataEmissioneBolla; });
-        var daRicevere   = items.filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
+        var daRicevere   = items.filter(function(i) { return i.dataEmissioneBolla && !i.dataConsegnaEffettiva; });
 
         document.getElementById('stat-da-prelevare').textContent  = daPrelevare.length;
         document.getElementById('stat-da-bollettare').textContent = daBollettare.length;
@@ -1246,20 +1183,6 @@
       }
 
       panel.style.display = 'block';
-    }
-
-    // ================================================
-    // INSERIMENTO MANUALE
-    // ================================================
-    function toggleManualInput(phase) {
-      var isManual = !state.manualMode[phase];
-      state.manualMode[phase] = isManual;
-
-      if (phase === 'registrazione') {
-        return;
-      }
-      if (phase === 'prelievo') { return; }
-      if (phase === 'ricezione') { return; }
     }
 
     // ================================================
@@ -1360,18 +1283,7 @@
     // INIT
     // ================================================
     document.addEventListener('DOMContentLoaded', function() {
-      updateRegSteps();
-      document.getElementById('reg-data').addEventListener('change', checkRegReady);
-      document.getElementById('reg-odv').addEventListener('input', checkRegReady);
-      document.getElementById('reg-cl').addEventListener('input', checkRegReady);
-      document.getElementById('prel-odv').addEventListener('input', function() {
-        var btn = document.getElementById('prel-confirm-btn');
-        if (btn) btn.disabled = !this.value.trim();
-      });
-      document.getElementById('ric-odv').addEventListener('input', function() {
-        var btn = document.getElementById('ric-confirm-btn');
-        if (btn) btn.disabled = !this.value.trim();
-      });
+      checkRegReady();
     });
   </script>
 </body>
