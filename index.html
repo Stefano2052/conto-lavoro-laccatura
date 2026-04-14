@@ -374,35 +374,33 @@
     .log-stato.prelevato { background: var(--info-bg); color: var(--info-text); }
     .log-stato.chiuso { background: var(--section-bg); color: var(--text-secondary); }
 
-    .steps {
+    .field-input-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      margin-bottom: 20px;
+      gap: 8px;
+      align-items: stretch;
     }
-
-    .step { display: flex; align-items: center; gap: 6px; }
-
-    .step-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
+    .field-input-row .field-input {
+      flex: 1;
+      min-width: 0;
+    }
+    .btn-scan-inline {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 20px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-      border: 2px solid var(--border);
-      color: var(--text-secondary);
-      background: var(--surface);
       transition: var(--transition);
+      -webkit-tap-highlight-color: transparent;
     }
-
-    .step-dot.active { border-color: var(--primary); background: var(--primary); color: white; }
-    .step-dot.done { border-color: var(--success-text); background: var(--success-bg); color: var(--success-text); }
-    .step-line { width: 40px; height: 2px; background: var(--border); transition: var(--transition); }
-    .step-line.done { background: var(--primary); }
+    .btn-scan-inline:active { background: var(--primary-dark); transform: translateY(1px); }
+    .btn-scan-inline:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     .spinner {
       width: 20px; height: 20px;
@@ -424,6 +422,7 @@
     }
 
     /* Barra diagnostica scanner — visibile durante la scansione */
+
     .scan-debug {
       min-height: 20px;
       font-size: 11px;
@@ -469,48 +468,34 @@
 
     <!-- FASE 1: REGISTRAZIONE -->
     <div class="phase-panel active" id="panel-registrazione">
-      <div class="steps">
-        <div class="step"><div class="step-dot active" id="reg-step1">1</div></div>
-        <div class="step-line" id="reg-line1"></div>
-        <div class="step"><div class="step-dot" id="reg-step2">2</div></div>
-        <div class="step-line" id="reg-line2"></div>
-        <div class="step"><div class="step-dot" id="reg-step3">3</div></div>
-      </div>
-
-      <div class="card" id="reg-scanner-card">
-        <div class="card-title">
-          <span class="icon">&#128247;</span>
-          <span id="reg-scanner-title">Scansiona ODV</span>
-        </div>
-        <input type="file" id="file-reg" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'registrazione')">
-        <img id="preview-reg" class="photo-preview" alt="">
-        <button class="btn btn-scan" id="reg-scan-btn" onclick="capturePhoto('registrazione')">
-          &#128247; Scatta foto
-        </button>
-        <div class="scan-debug" id="reg-scan-debug"></div>
-        <div class="manual-toggle">
-          <button onclick="toggleManualInput('registrazione')">Inserimento manuale</button>
-        </div>
-      </div>
-
       <div class="card">
         <div class="field-group">
           <div class="field-label">
             Codice ODV
             <span class="scanned-badge" id="reg-odv-badge" style="display:none">&#9989; scansionato</span>
           </div>
-          <input type="text" class="field-input" id="reg-odv" placeholder="Scansiona o digita il codice ODV" readonly>
+          <div class="field-input-row">
+            <input type="text" class="field-input" id="reg-odv" placeholder="Digita o scansiona il codice ODV" oninput="checkRegReady()">
+            <button class="btn-scan-inline" id="reg-odv-scan-btn" onclick="capturePhotoForRegField('odv')" title="Scansiona ODV">&#128247;</button>
+          </div>
+          <input type="file" id="file-reg-odv" accept="image/*" capture="environment" style="display:none" onchange="processRegFieldPhoto(this,'odv')">
+          <div class="scan-debug" id="reg-odv-debug"></div>
         </div>
         <div class="field-group">
           <div class="field-label">
             Codice CL
             <span class="scanned-badge" id="reg-cl-badge" style="display:none">&#9989; scansionato</span>
           </div>
-          <input type="text" class="field-input" id="reg-cl" placeholder="Scansiona o digita il codice CL" readonly>
+          <div class="field-input-row">
+            <input type="text" class="field-input" id="reg-cl" placeholder="Digita o scansiona il codice CL" oninput="checkRegReady()">
+            <button class="btn-scan-inline" id="reg-cl-scan-btn" onclick="capturePhotoForRegField('cl')" title="Scansiona CL">&#128247;</button>
+          </div>
+          <input type="file" id="file-reg-cl" accept="image/*" capture="environment" style="display:none" onchange="processRegFieldPhoto(this,'cl')">
+          <div class="scan-debug" id="reg-cl-debug"></div>
         </div>
         <div class="field-group">
           <div class="field-label">Data consegna prevista</div>
-          <input type="date" class="field-input" id="reg-data" disabled>
+          <input type="date" class="field-input" id="reg-data" oninput="checkRegReady()">
         </div>
         <button class="btn btn-confirm" id="reg-confirm-btn" onclick="confermaRegistrazione()" disabled>
           &#10004; Conferma Registrazione
@@ -825,41 +810,86 @@
     // ================================================
     // FASE 1 — REGISTRAZIONE
     // ================================================
-    function handleRegScan(code) {
-      if (state.regStep === 1) {
-        document.getElementById('reg-odv').value = code;
-        document.getElementById('reg-odv').classList.add('scanned');
-        document.getElementById('reg-odv-badge').style.display = 'inline-flex';
-        state.regStep = 2;
-        updateRegSteps();
-        document.getElementById('reg-scanner-title').textContent = 'Scansiona CL';
-        showToast('ODV scansionato! Ora scansiona il CL', 'info');
-        return;
-      }
-      if (state.regStep === 2) {
-        document.getElementById('reg-cl').value = code;
-        document.getElementById('reg-cl').classList.add('scanned');
-        document.getElementById('reg-cl-badge').style.display = 'inline-flex';
-        state.regStep = 3;
-        updateRegSteps();
-        stopScan();
-        document.getElementById('reg-scanner-title').textContent = 'Scansione completata';
-        document.getElementById('reg-data').disabled = false;
-        document.getElementById('reg-data').focus();
-        showToast('CL scansionato! Inserisci la data di consegna prevista', 'success');
-      }
+    function capturePhotoForRegField(field) {
+      var input = document.getElementById('file-reg-' + field);
+      input.value = '';
+      input.click();
     }
 
-    function updateRegSteps() {
-      var s = state.regStep;
-      document.getElementById('reg-step1').className = 'step-dot ' + (s > 1 ? 'done' : 'active');
-      document.getElementById('reg-step1').innerHTML = s > 1 ? '&#10003;' : '1';
-      document.getElementById('reg-step2').className = 'step-dot ' + (s > 2 ? 'done' : (s === 2 ? 'active' : ''));
-      document.getElementById('reg-step2').innerHTML = s > 2 ? '&#10003;' : '2';
-      document.getElementById('reg-step3').className = 'step-dot ' + (s === 3 ? 'active' : '');
-      document.getElementById('reg-step3').innerHTML = '3';
-      document.getElementById('reg-line1').className = 'step-line' + (s > 1 ? ' done' : '');
-      document.getElementById('reg-line2').className = 'step-line' + (s > 2 ? ' done' : '');
+    async function processRegFieldPhoto(inputEl, field) {
+      var file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      var fieldEl  = document.getElementById('reg-' + field);
+      var btnEl    = document.getElementById('reg-' + field + '-scan-btn');
+      var debugEl  = document.getElementById('reg-' + field + '-debug');
+      var badgeEl  = document.getElementById('reg-' + field + '-badge');
+
+      function setDebug(msg, cls) {
+        if (!debugEl) return;
+        debugEl.textContent = msg;
+        debugEl.className = 'scan-debug' + (cls ? ' ' + cls : '');
+      }
+
+      if (btnEl) btnEl.disabled = true;
+      setDebug('Lettura codice a barre...', 'active');
+
+      try {
+        var bitmap = await createImageBitmap(file);
+        var code = null;
+
+        if (!code && 'BarcodeDetector' in window) {
+          try {
+            var det = new BarcodeDetector({ formats: ['code_128'] });
+            var found = await det.detect(bitmap);
+            if (found.length > 0) code = found[0].rawValue;
+          } catch(e) {}
+        }
+
+        if (!code) {
+          if (!window.ZXing) await ensureZXingLoaded();
+          if (window.ZXing) {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width  = bitmap.width;
+              canvas.height = bitmap.height;
+              canvas.getContext('2d').drawImage(bitmap, 0, 0);
+              var hints = new Map();
+              hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+              hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+              var reader = new ZXing.BrowserMultiFormatReader(hints);
+              var res = await reader.decodeFromCanvas(canvas);
+              if (res) code = typeof res.getText === 'function' ? res.getText() : res.text;
+            } catch(e) {}
+          }
+        }
+
+        if (code) {
+          var cleanCode = String(code).trim();
+          if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+            setDebug('Codice non valido — riprova', 'warn');
+            showToast('Codice non riconosciuto — riprova', 'warning');
+          } else {
+            if (navigator.vibrate) navigator.vibrate(100);
+            fieldEl.value = cleanCode;
+            fieldEl.classList.add('scanned');
+            if (badgeEl) badgeEl.style.display = 'inline-flex';
+            setDebug('Letto: ' + cleanCode, 'active');
+            showToast((field === 'odv' ? 'ODV' : 'CL') + ' scansionato!', 'success');
+            checkRegReady();
+          }
+        } else {
+          setDebug('Nessun codice trovato — riprova', '');
+          showToast('Nessun codice trovato nella foto — riprova', 'warning');
+        }
+
+      } catch(err) {
+        console.error('[Photo scan]', err);
+        setDebug('Errore lettura — riprova', '');
+        showToast('Errore durante la lettura della foto', 'error');
+      } finally {
+        if (btnEl) btnEl.disabled = false;
+      }
     }
 
     function checkRegReady() {
@@ -895,9 +925,6 @@
     }
 
     function resetRegistrazione() {
-      stopScan();
-      state.regStep = 1;
-      updateRegSteps();
       document.getElementById('reg-odv').value = '';
       document.getElementById('reg-cl').value = '';
       document.getElementById('reg-data').value = '';
@@ -905,11 +932,10 @@
       document.getElementById('reg-cl').classList.remove('scanned');
       document.getElementById('reg-odv-badge').style.display = 'none';
       document.getElementById('reg-cl-badge').style.display = 'none';
-      document.getElementById('reg-data').disabled = true;
+      document.getElementById('reg-odv-debug').textContent = '';
+      document.getElementById('reg-cl-debug').textContent = '';
       document.getElementById('reg-confirm-btn').disabled = true;
       document.getElementById('reg-confirm-btn').innerHTML = '&#10004; Conferma Registrazione';
-      document.getElementById('reg-scanner-title').textContent = 'Scansiona ODV';
-      if (state.manualMode.registrazione) toggleManualInput('registrazione');
     }
 
     // ================================================
@@ -1106,22 +1132,6 @@
       state.manualMode[phase] = isManual;
 
       if (phase === 'registrazione') {
-        document.getElementById('reg-odv').readOnly = !isManual;
-        document.getElementById('reg-cl').readOnly = !isManual;
-        if (isManual) {
-          stopScan();
-          document.getElementById('reg-scanner-card').style.display = 'none';
-          document.getElementById('reg-odv').placeholder = 'Digita il codice ODV';
-          document.getElementById('reg-cl').placeholder = 'Digita il codice CL';
-          document.getElementById('reg-data').disabled = false;
-        } else {
-          document.getElementById('reg-scanner-card').style.display = '';
-          document.getElementById('reg-odv').placeholder = 'Scansiona o digita il codice ODV';
-          document.getElementById('reg-cl').placeholder = 'Scansiona o digita il codice CL';
-          document.getElementById('reg-odv').readOnly = true;
-          document.getElementById('reg-cl').readOnly = true;
-        }
-        checkRegReady();
         return;
       }
       if (phase === 'prelievo') {
