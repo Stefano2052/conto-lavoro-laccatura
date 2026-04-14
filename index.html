@@ -387,7 +387,6 @@
     }
 
     .log-dot.aperto { background: var(--primary); }
-    .log-dot.prelevato { background: var(--primary-dark); }
     .log-dot.chiuso { background: var(--success-text); }
 
     .log-info { flex: 1; min-width: 0; }
@@ -414,7 +413,6 @@
     }
 
     .log-stato.aperto { background: var(--success-bg); color: var(--success-text); }
-    .log-stato.prelevato { background: var(--info-bg); color: var(--info-text); }
     .log-stato.chiuso { background: var(--section-bg); color: var(--text-secondary); }
 
     .field-input-row {
@@ -1016,7 +1014,7 @@
         items.forEach(function(item) {
           var odv = String(item.odv || '');
           html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaPrelievo(\'' + odv + '\')">';
-          html += '<div class="log-dot prelevato"></div>';
+          html += '<div class="log-dot aperto"></div>';
           html += '<div class="log-info">';
           html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
           html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || '') + '</div>';
@@ -1258,7 +1256,7 @@
         var html = '';
         items.forEach(function(item) {
           html += '<div class="log-item">';
-          html += '<div class="log-dot prelevato"></div>';
+          html += '<div class="log-dot aperto"></div>';
           html += '<div class="log-info">';
           html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
           html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
