@@ -56,8 +56,8 @@
     @media (min-width: 480px) {
       .app-header { padding: 14px 20px; }
     }
-    .app-header h1 { font-size: 18px; font-weight: 700; }
-    .app-header .subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .app-header h1 { font-size: 26px; font-weight: 400; }
+    .app-header h1 strong { font-weight: 800; }
 
     .app-content {
       padding: 16px;
@@ -71,13 +71,8 @@
 
     .nav-tabs {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       margin-bottom: 20px;
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 5px;
-      box-shadow: var(--shadow-soft);
-      border: 1px solid var(--border);
     }
     .nav-tab {
       flex: 1;
@@ -85,29 +80,33 @@
       padding: 12px 6px;
       border-radius: var(--radius-sm);
       min-height: 46px;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--text-secondary);
       cursor: pointer;
       transition: var(--transition);
-      border: 1px solid transparent;
+      border: 1.5px solid var(--border);
       background: var(--surface);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
       -webkit-tap-highlight-color: transparent;
     }
-    .nav-tab .tab-icon { font-size: 18px; line-height: 1; }
     .nav-tab.active {
       background: var(--primary);
       color: white;
       border-color: var(--primary);
-      box-shadow: 0 2px 8px rgba(231, 158, 47, 0.3);
     }
     .nav-tab:not(.active):hover { background: var(--hover-row); }
     .nav-tab:not(.active):active { background: var(--selected-bg); }
+
+    .panel-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
 
     .phase-panel { display: none; animation: fadeIn 0.3s ease; }
     .phase-panel.active { display: block; }
@@ -441,33 +440,21 @@
 <body>
 
   <div class="app-header">
-    <h1>&#128230; Conto Lavoro Laccatura</h1>
-    <div class="subtitle">Scanner &amp; Tracciamento</div>
+    <h1><strong>Conto Lavoro</strong> Laccatura</h1>
   </div>
 
   <div class="app-content">
 
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchPhase('registrazione')" id="tab-registrazione">
-        <span class="tab-icon">&#128221;</span>
-        <span>Registra</span>
-      </button>
-      <button class="nav-tab" onclick="switchPhase('prelievo')" id="tab-prelievo">
-        <span class="tab-icon">&#128230;</span>
-        <span>Prelievo</span>
-      </button>
-      <button class="nav-tab" onclick="switchPhase('ricezione')" id="tab-ricezione">
-        <span class="tab-icon">&#9989;</span>
-        <span>Ricezione</span>
-      </button>
-      <button class="nav-tab" onclick="switchPhase('monitor')" id="tab-monitor">
-        <span class="tab-icon">&#128202;</span>
-        <span>Monitor</span>
-      </button>
+      <button class="nav-tab active" onclick="switchPhase('registrazione')" id="tab-registrazione">Registra</button>
+      <button class="nav-tab" onclick="switchPhase('prelievo')" id="tab-prelievo">Prelievo</button>
+      <button class="nav-tab" onclick="switchPhase('ricezione')" id="tab-ricezione">Ricezione</button>
+      <button class="nav-tab" onclick="switchPhase('monitor')" id="tab-monitor">Monitor</button>
     </div>
 
     <!-- FASE 1: REGISTRAZIONE -->
     <div class="phase-panel active" id="panel-registrazione">
+      <h2 class="panel-title">Registra un nuovo ODV</h2>
       <div class="card">
         <div class="field-group">
           <div class="field-label">
@@ -498,7 +485,7 @@
           <input type="date" class="field-input" id="reg-data" oninput="checkRegReady()">
         </div>
         <button class="btn btn-confirm" id="reg-confirm-btn" onclick="confermaRegistrazione()" disabled>
-          &#10004; Conferma Registrazione
+          Conferma
         </button>
         <button class="btn btn-reset" onclick="resetRegistrazione()">Resetta campi</button>
       </div>
@@ -506,6 +493,7 @@
 
     <!-- FASE 2: PRELIEVO -->
     <div class="phase-panel" id="panel-prelievo">
+      <h2 class="panel-title">Registra prelievo</h2>
       <div class="card">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
@@ -517,15 +505,12 @@
           <div class="scan-debug" id="prel-scan-debug"></div>
         </div>
         <button class="btn btn-confirm" id="prel-confirm-btn" onclick="confermaPrelievo(null)" disabled>
-          &#128230; Conferma Prelievo
+          Conferma
         </button>
       </div>
 
       <div class="card" id="prel-log-card">
-        <div class="card-title">
-          <span class="icon">&#128203;</span>
-          <span>Ultimi prelievi</span>
-        </div>
+        <div class="card-title">Ultimi prelievi</div>
         <div id="prel-session-log">
           <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
         </div>
@@ -534,6 +519,7 @@
 
     <!-- FASE 3: RICEZIONE -->
     <div class="phase-panel" id="panel-ricezione">
+      <h2 class="panel-title">Registra ricezione</h2>
       <div class="card">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
@@ -545,15 +531,12 @@
           <div class="scan-debug" id="ric-scan-debug"></div>
         </div>
         <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione(null)" disabled>
-          &#9989; Conferma Ricezione
+          Conferma
         </button>
       </div>
 
       <div class="card" id="ric-log-card">
-        <div class="card-title">
-          <span class="icon">&#128203;</span>
-          <span>Ultime ricezioni</span>
-        </div>
+        <div class="card-title">Ultime ricezioni</div>
         <div id="ric-session-log">
           <div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Caricamento...</div>
         </div>
@@ -562,6 +545,7 @@
 
     <!-- MONITOR -->
     <div class="phase-panel" id="panel-monitor">
+      <h2 class="panel-title">Situazione ordini</h2>
       <div class="stats-row">
         <div class="stat-card aperti">
           <div class="stat-number" id="stat-aperti">-</div>
@@ -578,10 +562,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">
-          <span class="icon">&#128203;</span>
-          <span>Ultime attivit&agrave;</span>
-        </div>
+        <div class="card-title">Ultime attivit&agrave;</div>
         <div id="activity-log">
           <div style="text-align:center; color:var(--text-light); padding:20px; font-size:14px;">
             Caricamento...
@@ -590,7 +571,7 @@
       </div>
 
       <button class="btn btn-primary" onclick="aggiornaMonitor()" style="margin-top:8px">
-        &#128260; Aggiorna Dati
+        Aggiorna dati
       </button>
     </div>
 
@@ -894,7 +875,7 @@
           resetRegistrazione();
         } else {
           showToast(result.message || 'Errore', result.type === 'duplicate' ? 'warning' : 'error');
-          btn.disabled = false; btn.innerHTML = '&#10004; Conferma Registrazione';
+          btn.disabled = false; btn.innerHTML = 'Conferma';
         }
       } catch (err) {
         showToast('Errore di connessione: ' + err.message, 'error');
@@ -913,7 +894,7 @@
       document.getElementById('reg-odv-debug').textContent = '';
       document.getElementById('reg-cl-debug').textContent = '';
       document.getElementById('reg-confirm-btn').disabled = true;
-      document.getElementById('reg-confirm-btn').innerHTML = '&#10004; Conferma Registrazione';
+      document.getElementById('reg-confirm-btn').innerHTML = 'Conferma';
     }
 
     // ================================================
@@ -930,15 +911,15 @@
         if (result.success) {
           showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
           document.getElementById('prel-odv').value = '';
-          if (btn) { btn.disabled = true; btn.innerHTML = '&#128230; Conferma Prelievo'; }
+          if (btn) { btn.disabled = true; btn.innerHTML = 'Conferma'; }
           caricaStoricoPrelievi();
         } else {
           showToast(result.message || 'Errore', 'error');
-          if (btn) { btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo'; }
+          if (btn) { btn.disabled = false; btn.innerHTML = 'Conferma'; }
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '&#128230; Conferma Prelievo'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'Conferma'; }
       }
     }
 
@@ -956,15 +937,15 @@
         if (result.success) {
           showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
           document.getElementById('ric-odv').value = '';
-          if (btn) { btn.disabled = true; btn.innerHTML = '&#9989; Conferma Ricezione'; }
+          if (btn) { btn.disabled = true; btn.innerHTML = 'Conferma'; }
           caricaStoricoRicezioni();
         } else {
           showToast(result.message || 'Errore', 'error');
-          if (btn) { btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione'; }
+          if (btn) { btn.disabled = false; btn.innerHTML = 'Conferma'; }
         }
       } catch (err) {
         showToast('Errore: ' + err.message, 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '&#9989; Conferma Ricezione'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'Conferma'; }
       }
     }
 
