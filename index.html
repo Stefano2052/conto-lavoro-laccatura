@@ -379,6 +379,12 @@
     .stat-card.aperti .stat-number { color: var(--primary); }
     .stat-card.prelevati .stat-number { color: var(--primary-dark); }
     .stat-card.chiusi .stat-number { color: var(--success-text); }
+    .stat-card.da-prelevare .stat-number { color: var(--primary); }
+    .stat-card.da-bollettare .stat-number { color: var(--primary-dark); }
+    .stat-card.da-ricevere .stat-number { color: var(--success-text); }
+    .stat-card[onclick] { cursor: pointer; transition: var(--transition); }
+    .stat-card[onclick]:hover { background: var(--hover-row); }
+    .stat-card[onclick]:active { background: var(--selected-bg); }
 
     .log-item {
       display: flex;
@@ -626,18 +632,23 @@
     <div class="phase-panel" id="panel-monitor">
       <h2 class="panel-title">Situazione ordini</h2>
       <div class="stats-row">
-        <div class="stat-card aperti">
-          <div class="stat-number" id="stat-aperti">-</div>
-          <div class="stat-label">Aperti</div>
+        <div class="stat-card da-prelevare" onclick="mostraListaMonitor('daPrelevare')">
+          <div class="stat-number" id="stat-da-prelevare">-</div>
+          <div class="stat-label">Da prelevare</div>
         </div>
-        <div class="stat-card prelevati">
-          <div class="stat-number" id="stat-prelevati">-</div>
-          <div class="stat-label">Prelevati</div>
+        <div class="stat-card da-bollettare" onclick="mostraListaMonitor('daBollettare')">
+          <div class="stat-number" id="stat-da-bollettare">-</div>
+          <div class="stat-label">Da bollettare</div>
         </div>
-        <div class="stat-card chiusi">
-          <div class="stat-number" id="stat-chiusi">-</div>
-          <div class="stat-label">Chiusi</div>
+        <div class="stat-card da-ricevere" onclick="mostraListaMonitor('daRicevere')">
+          <div class="stat-number" id="stat-da-ricevere">-</div>
+          <div class="stat-label">Da ricevere</div>
         </div>
+      </div>
+
+      <div class="card" id="monitor-detail-panel" style="display:none">
+        <div class="card-title" id="monitor-detail-title"></div>
+        <div id="monitor-detail-list"></div>
       </div>
 
       <div class="card">
@@ -684,6 +695,14 @@
       ricezioniSessione: [],
       manualMode: { registrazione: false, prelievo: false, ricezione: false }
     };
+
+    var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
+    var _successOverlayTimer = null;
+
+    function formatDateOnly(dateStr) {
+      if (!dateStr) return '-';
+      return String(dateStr).split('T')[0].split(' ')[0];
+    }
 
     const PHASE_ABBR   = { registrazione: 'reg', prelievo: 'prel', ricezione: 'ric' };
     const buttonMap    = { registrazione: 'reg-scan-btn',   prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
@@ -962,7 +981,7 @@
       try {
         var result = await apiCall('registraODV', { codiceODV: odv, codiceCL: cl, dataConsegnaPrevista: data });
         if (result.success) {
-          showToast('Registrato: ' + odv + ' \u2194 ' + cl, 'success');
+          showSuccessOverlay('ODV: ' + odv + '\nCL: ' + cl);
           resetRegistrazione();
         } else {
           showToast(result.message || 'Errore', result.type === 'duplicate' ? 'warning' : 'error');
@@ -1145,39 +1164,88 @@
     // MONITOR
     // ================================================
     async function aggiornaMonitor() {
-      try {
-        var statsResp = await apiCall('getStats');
-        var stats = statsResp.data || statsResp;
-        document.getElementById('stat-aperti').textContent = stats.aperti ?? 0;
-        document.getElementById('stat-prelevati').textContent = stats.prelevati ?? 0;
-        document.getElementById('stat-chiusi').textContent = stats.chiusi ?? 0;
-      } catch (err) { console.error(err); }
+      document.getElementById('monitor-detail-panel').style.display = 'none';
+      document.getElementById('monitor-detail-panel').dataset.tipo = '';
 
       try {
-        var itemsResp = await apiCall('getUltimeRegistrazioni', { n: 15 });
+        var itemsResp = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = itemsResp.data || [];
+
+        var daPrelevare  = items.filter(function(i) { return !i.dataPrelievoEffettivo; });
+        var daBollettare = items.filter(function(i) { return i.dataPrelievoEffettivo && !i.dataEmissioneBolla; });
+        var daRicevere   = items.filter(function(i) { return i.dataPrelievoEffettivo && !i.dataConsegnaEffettiva; });
+
+        document.getElementById('stat-da-prelevare').textContent  = daPrelevare.length;
+        document.getElementById('stat-da-bollettare').textContent = daBollettare.length;
+        document.getElementById('stat-da-ricevere').textContent   = daRicevere.length;
+
+        _monitorData = { daPrelevare: daPrelevare, daBollettare: daBollettare, daRicevere: daRicevere };
+
         var container = document.getElementById('activity-log');
-        if (!items || items.length === 0) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px;font-size:14px;">Nessuna registrazione</div>';
+        var recent = items.slice(0, 15);
+        if (!recent.length) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna registrazione</div>';
           return;
         }
         var html = '';
-        items.forEach(function(item) {
+        recent.forEach(function(item) {
           var statoClass = String(item.stato || '').toLowerCase();
           html += '<div class="log-item">';
           html += '<div class="log-dot ' + statoClass + '"></div>';
           html += '<div class="log-info">';
           html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Consegna prevista: ' + escapeHtml(item.dataConsegnaPrevista || '') + '</div>';
+          html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
           html += '</div>';
           html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
           html += '</div>';
         });
         container.innerHTML = html;
       } catch (err) {
+        console.error(err);
         document.getElementById('activity-log').innerHTML =
-          '<div style="text-align:center;color:var(--danger);padding:20px;font-size:14px;">Errore caricamento</div>';
+          '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
+    }
+
+    function mostraListaMonitor(tipo) {
+      var panel  = document.getElementById('monitor-detail-panel');
+      var listEl = document.getElementById('monitor-detail-list');
+      var titleEl = document.getElementById('monitor-detail-title');
+
+      if (panel.dataset.tipo === tipo && panel.style.display !== 'none') {
+        panel.style.display = 'none';
+        panel.dataset.tipo = '';
+        return;
+      }
+
+      var labels = { daPrelevare: 'Da prelevare', daBollettare: 'Da bollettare', daRicevere: 'Da ricevere' };
+      titleEl.textContent = labels[tipo] || tipo;
+      panel.dataset.tipo = tipo;
+
+      var items = (_monitorData[tipo] || []).slice();
+      items.sort(function(a, b) {
+        var da = a.dataConsegnaPrevista || '';
+        var db = b.dataConsegnaPrevista || '';
+        return da > db ? -1 : da < db ? 1 : 0;
+      });
+
+      if (!items.length) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV</div>';
+      } else {
+        var html = '';
+        items.forEach(function(item) {
+          html += '<div class="log-item">';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
+          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+          html += '</div>';
+          html += '</div>';
+        });
+        listEl.innerHTML = html;
+      }
+
+      panel.style.display = 'block';
     }
 
     // ================================================
@@ -1204,13 +1272,14 @@
     function showSuccessOverlay(message) {
       var overlay = document.getElementById('success-overlay');
       var msg = document.getElementById('success-overlay-msg');
-      msg.textContent = message;
+      msg.innerHTML = escapeHtml(message).replace(/\n/g, '<br>');
       overlay.classList.add('show');
-      if (showSuccessOverlay._timer) clearTimeout(showSuccessOverlay._timer);
-      showSuccessOverlay._timer = setTimeout(hideSuccessOverlay, 2500);
+      if (_successOverlayTimer) clearTimeout(_successOverlayTimer);
+      _successOverlayTimer = setTimeout(hideSuccessOverlay, 2500);
     }
 
     function hideSuccessOverlay() {
+      _successOverlayTimer = null;
       document.getElementById('success-overlay').classList.remove('show');
     }
 
@@ -1234,8 +1303,9 @@
           html += '<div class="log-item">';
           html += '<div class="log-dot aperto"></div>';
           html += '<div class="log-info">';
-          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Spedizione: ' + escapeHtml(item.dataConsegnaPrevista || '-') + '</div>';
+          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
+          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
           html += '</div>';
           html += '</div>';
         });
@@ -1265,8 +1335,9 @@
           html += '<div class="log-item">';
           html += '<div class="log-dot prelevato"></div>';
           html += '<div class="log-info">';
-          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Consegna prevista: ' + escapeHtml(item.dataConsegnaPrevista || '-') + '</div>';
+          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
+          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
           html += '</div>';
           html += '</div>';
         });
