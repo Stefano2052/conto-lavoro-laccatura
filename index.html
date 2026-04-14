@@ -52,12 +52,20 @@
       top: 0;
       z-index: 100;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     @media (min-width: 480px) {
       .app-header { padding: 14px 20px; }
     }
     .app-header h1 { font-size: 26px; font-weight: 400; }
     .app-header h1 strong { font-weight: 800; }
+    .app-header .app-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
 
     .app-content {
       padding: 16px;
@@ -440,7 +448,8 @@
 <body>
 
   <div class="app-header">
-    <h1><strong>Conto Lavoro</strong> Laccatura</h1>
+    <h1><strong>Berloni</strong> Bagno</h1>
+    <span class="app-name">Conto Lavoro Laccatura</span>
   </div>
 
   <div class="app-content">
