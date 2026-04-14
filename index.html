@@ -1287,8 +1287,8 @@
       var container = document.getElementById('prel-waiting-list');
       container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
-        var result = await apiCall('getUltimeRegistrazioni', { stato: 'aperto', n: 500 });
-        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'aperto'; });
+        var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
+        var items = (result.data || []).filter(function(i) { return !i.dataPrelievo; });
         items.sort(function(a, b) {
           var da = a.dataSpedizioneCliente || '';
           var db = b.dataSpedizioneCliente || '';
@@ -1319,8 +1319,8 @@
       var container = document.getElementById('ric-waiting-list');
       container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
-        var result = await apiCall('getUltimeRegistrazioni', { stato: 'prelevato', n: 500 });
-        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'prelevato'; });
+        var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
+        var items = (result.data || []).filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
         items.sort(function(a, b) {
           var da = a.dataConsegnaPrevista || '';
           var db = b.dataConsegnaPrevista || '';
