@@ -506,26 +506,15 @@
 
     <!-- FASE 2: PRELIEVO -->
     <div class="phase-panel" id="panel-prelievo">
-      <div class="card" id="prel-scanner-card">
-        <div class="card-title">
-          <span class="icon">&#128247;</span>
-          <span>Scansiona ODV per prelievo</span>
-        </div>
-        <input type="file" id="file-prel" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'prelievo')">
-        <img id="preview-prel" class="photo-preview" alt="">
-        <button class="btn btn-scan" id="prel-scan-btn" onclick="capturePhoto('prelievo')">
-          &#128247; Scatta foto
-        </button>
-        <div class="scan-debug" id="prel-scan-debug"></div>
-        <div class="manual-toggle">
-          <button onclick="toggleManualInput('prelievo')">Inserimento manuale</button>
-        </div>
-      </div>
-
-      <div class="card" id="prel-manual-card" style="display:none">
+      <div class="card">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
-          <input type="text" class="field-input" id="prel-odv" placeholder="Digita il codice ODV">
+          <div class="field-input-row">
+            <input type="text" class="field-input" id="prel-odv" placeholder="Digita o scansiona il codice ODV" oninput="document.getElementById('prel-confirm-btn').disabled=!this.value.trim()">
+            <button class="btn-scan-inline" id="prel-scan-btn" onclick="capturePhoto('prelievo')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+          </div>
+          <input type="file" id="file-prel" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'prelievo')">
+          <div class="scan-debug" id="prel-scan-debug"></div>
         </div>
         <button class="btn btn-confirm" id="prel-confirm-btn" onclick="confermaPrelievo(null)" disabled>
           &#128230; Conferma Prelievo
@@ -545,26 +534,15 @@
 
     <!-- FASE 3: RICEZIONE -->
     <div class="phase-panel" id="panel-ricezione">
-      <div class="card" id="ric-scanner-card">
-        <div class="card-title">
-          <span class="icon">&#128247;</span>
-          <span>Scansiona ODV per ricezione</span>
-        </div>
-        <input type="file" id="file-ric" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'ricezione')">
-        <img id="preview-ric" class="photo-preview" alt="">
-        <button class="btn btn-scan" id="ric-scan-btn" onclick="capturePhoto('ricezione')">
-          &#128247; Scatta foto
-        </button>
-        <div class="scan-debug" id="ric-scan-debug"></div>
-        <div class="manual-toggle">
-          <button onclick="toggleManualInput('ricezione')">Inserimento manuale</button>
-        </div>
-      </div>
-
-      <div class="card" id="ric-manual-card" style="display:none">
+      <div class="card">
         <div class="field-group">
           <div class="field-label">Codice ODV</div>
-          <input type="text" class="field-input" id="ric-odv" placeholder="Digita il codice ODV">
+          <div class="field-input-row">
+            <input type="text" class="field-input" id="ric-odv" placeholder="Digita o scansiona il codice ODV" oninput="document.getElementById('ric-confirm-btn').disabled=!this.value.trim()">
+            <button class="btn-scan-inline" id="ric-scan-btn" onclick="capturePhoto('ricezione')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+          </div>
+          <input type="file" id="file-ric" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'ricezione')">
+          <div class="scan-debug" id="ric-scan-debug"></div>
         </div>
         <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione(null)" disabled>
           &#9989; Conferma Ricezione
@@ -944,13 +922,14 @@
     async function confermaPrelievo(odv) {
       if (!odv) odv = (document.getElementById('prel-odv').value || '').trim();
       if (!odv) { showToast('Scansiona o digita un ODV', 'warning'); return; }
+      document.getElementById('prel-odv').value = odv;
       var btn = document.getElementById('prel-confirm-btn');
       if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Salvataggio...'; }
       try {
         var result = await apiCall('registraPrelievo', { codiceODV: odv });
         if (result.success) {
           showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          if (state.manualMode.prelievo) document.getElementById('prel-odv').value = '';
+          document.getElementById('prel-odv').value = '';
           if (btn) { btn.disabled = true; btn.innerHTML = '&#128230; Conferma Prelievo'; }
           caricaStoricoPrelievi();
         } else {
@@ -969,13 +948,14 @@
     async function confermaRicezione(odv) {
       if (!odv) odv = (document.getElementById('ric-odv').value || '').trim();
       if (!odv) { showToast('Scansiona o digita un ODV', 'warning'); return; }
+      document.getElementById('ric-odv').value = odv;
       var btn = document.getElementById('ric-confirm-btn');
       if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Salvataggio...'; }
       try {
         var result = await apiCall('registraRicezione', { codiceODV: odv });
         if (result.success) {
           showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
-          if (state.manualMode.ricezione) document.getElementById('ric-odv').value = '';
+          document.getElementById('ric-odv').value = '';
           if (btn) { btn.disabled = true; btn.innerHTML = '&#9989; Conferma Ricezione'; }
           caricaStoricoRicezioni();
         } else {
@@ -1134,33 +1114,8 @@
       if (phase === 'registrazione') {
         return;
       }
-      if (phase === 'prelievo') {
-        if (isManual) {
-          stopScan();
-          document.getElementById('prel-scanner-card').style.display = 'none';
-          document.getElementById('prel-manual-card').style.display = 'block';
-          document.getElementById('prel-odv').focus();
-        } else {
-          document.getElementById('prel-scanner-card').style.display = '';
-          document.getElementById('prel-manual-card').style.display = 'none';
-          document.getElementById('prel-odv').value = '';
-          document.getElementById('prel-confirm-btn').disabled = true;
-        }
-        return;
-      }
-      if (phase === 'ricezione') {
-        if (isManual) {
-          stopScan();
-          document.getElementById('ric-scanner-card').style.display = 'none';
-          document.getElementById('ric-manual-card').style.display = 'block';
-          document.getElementById('ric-odv').focus();
-        } else {
-          document.getElementById('ric-scanner-card').style.display = '';
-          document.getElementById('ric-manual-card').style.display = 'none';
-          document.getElementById('ric-odv').value = '';
-          document.getElementById('ric-confirm-btn').disabled = true;
-        }
-      }
+      if (phase === 'prelievo') { return; }
+      if (phase === 'ricezione') { return; }
     }
 
     // ================================================
