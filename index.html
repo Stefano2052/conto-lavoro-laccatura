@@ -298,6 +298,53 @@
     .toast.warning { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--primary); }
     .toast.info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--border); }
 
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .success-overlay.show { opacity: 1; pointer-events: auto; }
+    .success-overlay-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      max-width: 300px;
+      width: 90%;
+      transform: scale(0.85);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .success-overlay.show .success-overlay-card { transform: scale(1); }
+    .success-check-circle {
+      width: 80px;
+      height: 80px;
+      background: #2ecc71;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .success-overlay-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+    .success-overlay-msg {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
     .stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -527,6 +574,13 @@
         </button>
       </div>
 
+      <div class="card" id="prel-waiting-card">
+        <div class="card-title">In attesa di prelievo</div>
+        <div id="prel-waiting-list">
+          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+        </div>
+      </div>
+
       <div class="card" id="prel-log-card">
         <div class="card-title">Ultimi prelievi</div>
         <div id="prel-session-log">
@@ -551,6 +605,13 @@
         <button class="btn btn-confirm" id="ric-confirm-btn" onclick="confermaRicezione(null)" disabled>
           Conferma
         </button>
+      </div>
+
+      <div class="card" id="ric-waiting-card">
+        <div class="card-title">In attesa di ricezione</div>
+        <div id="ric-waiting-list">
+          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+        </div>
       </div>
 
       <div class="card" id="ric-log-card">
@@ -596,6 +657,18 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="success-overlay" id="success-overlay" onclick="hideSuccessOverlay()">
+    <div class="success-overlay-card">
+      <div class="success-check-circle">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="4,12 9,18 20,6" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="success-overlay-title">Conferma avvenuta<br>con successo</div>
+      <div class="success-overlay-msg" id="success-overlay-msg"></div>
+    </div>
+  </div>
 
   <script>
     // ================================================
@@ -648,8 +721,8 @@
       document.querySelectorAll('.phase-panel').forEach(function(p) { p.classList.remove('active'); });
       document.getElementById('panel-' + phase).classList.add('active');
       if (phase === 'monitor') aggiornaMonitor();
-      if (phase === 'prelievo') caricaStoricoPrelievi();
-      if (phase === 'ricezione') caricaStoricoRicezioni();
+      if (phase === 'prelievo') { caricaOdvInAttesaPrelievo(); caricaStoricoPrelievi(); }
+      if (phase === 'ricezione') { caricaOdvInAttesaRicezione(); caricaStoricoRicezioni(); }
     }
 
     // ================================================
@@ -927,9 +1000,10 @@
       try {
         var result = await apiCall('registraPrelievo', { codiceODV: odv });
         if (result.success) {
-          showToast('Prelievo: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
+          showSuccessOverlay('ODV: ' + odv + '\nCL: ' + result.data.cl);
           document.getElementById('prel-odv').value = '';
           if (btn) { btn.disabled = true; btn.innerHTML = 'Conferma'; }
+          caricaOdvInAttesaPrelievo();
           caricaStoricoPrelievi();
         } else {
           showToast(result.message || 'Errore', 'error');
@@ -953,9 +1027,10 @@
       try {
         var result = await apiCall('registraRicezione', { codiceODV: odv });
         if (result.success) {
-          showToast('Chiuso: ' + odv + ' (CL: ' + result.data.cl + ')', 'success');
+          showSuccessOverlay('ODV: ' + odv + '\nCL: ' + result.data.cl);
           document.getElementById('ric-odv').value = '';
           if (btn) { btn.disabled = true; btn.innerHTML = 'Conferma'; }
+          caricaOdvInAttesaRicezione();
           caricaStoricoRicezioni();
         } else {
           showToast(result.message || 'Errore', 'error');
@@ -1036,6 +1111,7 @@
         var result = await apiCall('annullaPrelievo', { codiceODV: odv });
         if (result.success) {
           showToast('Prelievo annullato: ' + odv, 'success');
+          caricaOdvInAttesaPrelievo();
           caricaStoricoPrelievi();
         } else {
           showToast(result.message || 'Errore annullamento', 'error');
@@ -1055,6 +1131,7 @@
         var result = await apiCall('annullaRicezione', { codiceODV: odv });
         if (result.success) {
           showToast('Ricezione annullata: ' + odv, 'success');
+          caricaOdvInAttesaRicezione();
           caricaStoricoRicezioni();
         } else {
           showToast(result.message || 'Errore annullamento', 'error');
@@ -1122,6 +1199,81 @@
     // ================================================
     function escapeHtml(value) {
       return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function showSuccessOverlay(message) {
+      var overlay = document.getElementById('success-overlay');
+      var msg = document.getElementById('success-overlay-msg');
+      msg.textContent = message;
+      overlay.classList.add('show');
+      if (showSuccessOverlay._timer) clearTimeout(showSuccessOverlay._timer);
+      showSuccessOverlay._timer = setTimeout(hideSuccessOverlay, 2500);
+    }
+
+    function hideSuccessOverlay() {
+      document.getElementById('success-overlay').classList.remove('show');
+    }
+
+    async function caricaOdvInAttesaPrelievo() {
+      var container = document.getElementById('prel-waiting-list');
+      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      try {
+        var result = await apiCall('getUltimeRegistrazioni', { stato: 'aperto', n: 500 });
+        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'aperto'; });
+        items.sort(function(a, b) {
+          var da = a.dataConsegnaPrevista || '';
+          var db = b.dataConsegnaPrevista || '';
+          return da > db ? -1 : da < db ? 1 : 0;
+        });
+        if (!items.length) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+          return;
+        }
+        var html = '';
+        items.forEach(function(item) {
+          html += '<div class="log-item">';
+          html += '<div class="log-dot aperto"></div>';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Spedizione: ' + escapeHtml(item.dataConsegnaPrevista || '-') + '</div>';
+          html += '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+      }
+    }
+
+    async function caricaOdvInAttesaRicezione() {
+      var container = document.getElementById('ric-waiting-list');
+      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      try {
+        var result = await apiCall('getUltimeRegistrazioni', { stato: 'prelevato', n: 500 });
+        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'prelevato'; });
+        items.sort(function(a, b) {
+          var da = a.dataConsegnaPrevista || '';
+          var db = b.dataConsegnaPrevista || '';
+          return da > db ? -1 : da < db ? 1 : 0;
+        });
+        if (!items.length) {
+          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+          return;
+        }
+        var html = '';
+        items.forEach(function(item) {
+          html += '<div class="log-item">';
+          html += '<div class="log-dot prelevato"></div>';
+          html += '<div class="log-info">';
+          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-date">Consegna prevista: ' + escapeHtml(item.dataConsegnaPrevista || '-') + '</div>';
+          html += '</div>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+      }
     }
 
     function showToast(message, type) {
