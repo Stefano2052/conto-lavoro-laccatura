@@ -401,54 +401,6 @@
     }
     .scan-debug.active { color: var(--accent); }
     .scan-debug.warn   { color: var(--warning); }
-
-    /* Modal fotocamera per forzare fotocamera posteriore */
-    #camera-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 9999;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-    }
-    #camera-modal.open { display: flex; }
-    #camera-video {
-      width: 100%;
-      flex: 1;
-      object-fit: cover;
-    }
-    #camera-controls {
-      width: 100%;
-      padding: 24px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-      background: #000;
-    }
-    #camera-snap-btn {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: #fff;
-      border: 4px solid #ccc;
-      font-size: 28px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #camera-cancel-btn {
-      background: #444;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 12px 24px;
-      font-size: 16px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -716,6 +668,13 @@
     // ================================================
     // SCANNER — lettura codice a barre da foto
     // ================================================
+
+    // Apre la fotocamera nativa del dispositivo per scattare una foto
+    function capturePhoto(phase) {
+      var input = document.getElementById('file-' + PHASE_ABBR[phase]);
+      input.value = '';   // reset per permettere la stessa foto due volte
+      input.click();
+    }
 
     // Viene chiamata quando l'utente ha scattato/scelto una foto
     async function processPhotoFile(inputEl, phase) {
@@ -1122,61 +1081,6 @@
     }
 
     // ================================================
-    // FOTOCAMERA POSTERIORE — modal getUserMedia
-    // ================================================
-    var _cameraStream = null;
-    var _cameraPhase  = null;
-
-    async function capturePhoto(phase) {
-      _cameraPhase = phase;
-
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Prova prima con exact per forzare la fotocamera posteriore
-        var constraints = [
-          { video: { facingMode: { exact: 'environment' } } },
-          { video: { facingMode: 'environment' } }
-        ];
-        for (var i = 0; i < constraints.length; i++) {
-          try {
-            _cameraStream = await navigator.mediaDevices.getUserMedia(constraints[i]);
-            var video = document.getElementById('camera-video');
-            video.srcObject = _cameraStream;
-            document.getElementById('camera-modal').classList.add('open');
-            return;
-          } catch(e) { /* prova il constraint successivo */ }
-        }
-      }
-
-      // Fallback: input file nativo
-      var input = document.getElementById('file-' + PHASE_ABBR[phase]);
-      input.value = '';
-      input.click();
-    }
-
-    function snapPhoto() {
-      var video  = document.getElementById('camera-video');
-      var canvas = document.getElementById('camera-canvas');
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      var phase = _cameraPhase;
-      closeCameraModal();
-      canvas.toBlob(function(blob) {
-        var file = new File([blob], 'foto.jpg', { type: 'image/jpeg' });
-        processPhotoFile({ files: [file] }, phase);
-      }, 'image/jpeg', 0.92);
-    }
-
-    function closeCameraModal() {
-      if (_cameraStream) {
-        _cameraStream.getTracks().forEach(function(t) { t.stop(); });
-        _cameraStream = null;
-      }
-      document.getElementById('camera-modal').classList.remove('open');
-      _cameraPhase = null;
-    }
-
-    // ================================================
     // INIT
     // ================================================
     document.addEventListener('DOMContentLoaded', function() {
@@ -1192,15 +1096,5 @@
       });
     });
   </script>
-
-  <!-- Modal fotocamera posteriore -->
-  <div id="camera-modal">
-    <video id="camera-video" autoplay playsinline muted></video>
-    <div id="camera-controls">
-      <button id="camera-cancel-btn" onclick="closeCameraModal()">Annulla</button>
-      <button id="camera-snap-btn" onclick="snapPhoto()">&#128247;</button>
-    </div>
-  </div>
-  <canvas id="camera-canvas" style="display:none;"></canvas>
 </body>
 </html>
