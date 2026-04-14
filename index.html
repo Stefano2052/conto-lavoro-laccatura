@@ -1005,8 +1005,9 @@
       var container = document.getElementById('prel-session-log');
       container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
-        var result = await apiCall('getUltimeRegistrazioni', { stato: 'prelevato', n: 20 });
-        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'prelevato'; });
+        var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
+        var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
+        items.sort(function(a, b) { return String(b.dataPrelievo).localeCompare(String(a.dataPrelievo)); });
         if (!items.length) {
           container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
           return;
@@ -1018,7 +1019,7 @@
           html += '<div class="log-dot prelevato"></div>';
           html += '<div class="log-info">';
           html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || item.dataConsegnaPrevista || '') + '</div>';
+          html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || '') + '</div>';
           html += '</div>';
           html += '<div class="log-cancel">&#10005; Annulla</div>';
           html += '</div>';
@@ -1033,8 +1034,9 @@
       var container = document.getElementById('ric-session-log');
       container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
       try {
-        var result = await apiCall('getUltimeRegistrazioni', { stato: 'chiuso', n: 20 });
-        var items = (result.data || []).filter(function(i) { return String(i.stato || '').toLowerCase() === 'chiuso'; });
+        var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
+        var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
+        items.sort(function(a, b) { return String(b.dataConsegnaEffettiva).localeCompare(String(a.dataConsegnaEffettiva)); });
         if (!items.length) {
           container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
           return;
