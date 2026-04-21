@@ -7,28 +7,58 @@
     body { background: #1a1a1a; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
     .container { display: flex; gap: 48px; flex-wrap: wrap; justify-content: center; padding: 40px; }
     .option { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .option img { width: 160px; height: 160px; border-radius: 36px; }
+    .option svg { width: 160px; height: 160px; }
     .label { color: #fff; font-size: 15px; font-weight: bold; letter-spacing: 0.5px; }
     .sublabel { color: #aaa; font-size: 12px; margin-top: -10px; }
   </style>
 </head>
 <body>
   <div class="container">
+
     <div class="option">
-      <img src="logo-option-a.svg" alt="Opzione A">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+        <rect x="72" y="168" width="252" height="76" rx="22" fill="white"/>
+        <rect x="292" y="180" width="112" height="52" rx="14" fill="white"/>
+        <rect x="166" y="238" width="52" height="114" rx="22" fill="white"/>
+        <rect x="244" y="236" width="28" height="52" rx="10" fill="white"/>
+        <path d="M 406 206 C 428 190 446 178 462 168" stroke="rgba(255,255,255,0.78)" stroke-width="13" stroke-linecap="round" fill="none"/>
+        <path d="M 406 206 C 432 204 452 204 468 204" stroke="rgba(255,255,255,0.92)" stroke-width="16" stroke-linecap="round" fill="none"/>
+        <path d="M 406 206 C 428 222 446 234 462 244" stroke="rgba(255,255,255,0.68)" stroke-width="11" stroke-linecap="round" fill="none"/>
+      </svg>
       <span class="label">A — Pistola a spruzzo</span>
       <span class="sublabel">Strumento industriale classico</span>
     </div>
+
     <div class="option">
-      <img src="logo-option-b.svg" alt="Opzione B">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+        <rect x="208" y="130" width="148" height="220" rx="16" fill="rgba(255,255,255,0.35)"/>
+        <rect x="184" y="150" width="148" height="220" rx="16" fill="rgba(255,255,255,0.62)"/>
+        <rect x="160" y="170" width="148" height="220" rx="16" fill="white"/>
+        <path d="M 174 182 L 224 182 L 192 232 L 174 232 Z" fill="rgba(255,255,255,0.40)"/>
+      </svg>
       <span class="label">B — Pannelli laccati</span>
       <span class="sublabel">Lotto di fronti in lavorazione</span>
     </div>
+
     <div class="option">
-      <img src="logo-option-c.svg" alt="Opzione C">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+        <rect x="72" y="212" width="200" height="88" rx="26" fill="white"/>
+        <ellipse cx="285" cy="256" rx="22" ry="48" fill="white"/>
+        <rect x="272" y="194" width="28" height="24" rx="9" fill="white"/>
+        <rect x="272" y="294" width="28" height="24" rx="9" fill="white"/>
+        <path d="M 308 256 C 352 236 408 224 474 210" stroke="rgba(255,255,255,0.52)" stroke-width="9"  stroke-linecap="round" fill="none"/>
+        <path d="M 308 256 C 354 248 410 244 474 242" stroke="rgba(255,255,255,0.70)" stroke-width="11" stroke-linecap="round" fill="none"/>
+        <path d="M 308 256 C 362 256 414 256 474 256" stroke="rgba(255,255,255,0.88)" stroke-width="14" stroke-linecap="round" fill="none"/>
+        <path d="M 308 256 C 354 264 410 268 474 270" stroke="rgba(255,255,255,0.70)" stroke-width="11" stroke-linecap="round" fill="none"/>
+        <path d="M 308 256 C 352 276 408 288 474 302" stroke="rgba(255,255,255,0.52)" stroke-width="9"  stroke-linecap="round" fill="none"/>
+      </svg>
       <span class="label">C — Ugello a ventaglio</span>
       <span class="sublabel">Azione dello spray, stile moderno</span>
     </div>
+
   </div>
 </body>
 </html>
