@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+
+  <!-- Back panel (in fondo) -->
+  <rect x="208" y="130" width="148" height="220" rx="16" fill="rgba(255,255,255,0.35)"/>
+
+  <!-- Middle panel -->
+  <rect x="184" y="150" width="148" height="220" rx="16" fill="rgba(255,255,255,0.62)"/>
+
+  <!-- Front panel (laccato, in primo piano) -->
+  <rect x="160" y="170" width="148" height="220" rx="16" fill="white"/>
+
+  <!-- Riflesso lucido sul pannello frontale -->
+  <path d="M 174 182 L 224 182 L 192 232 L 174 232 Z" fill="rgba(255,255,255,0.40)"/>
+</svg>

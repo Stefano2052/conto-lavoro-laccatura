@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+
+  <!-- Body -->
+  <rect x="72" y="168" width="252" height="76" rx="22" fill="white"/>
+  <!-- Nozzle barrel -->
+  <rect x="292" y="180" width="112" height="52" rx="14" fill="white"/>
+  <!-- Pistol grip -->
+  <rect x="166" y="238" width="52" height="114" rx="22" fill="white"/>
+  <!-- Trigger -->
+  <rect x="244" y="236" width="28" height="52" rx="10" fill="white"/>
+
+  <!-- Spray fan from nozzle tip -->
+  <path d="M 406 206 C 428 190 446 178 462 168" stroke="rgba(255,255,255,0.78)" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M 406 206 C 432 204 452 204 468 204" stroke="rgba(255,255,255,0.92)" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M 406 206 C 428 222 446 234 462 244" stroke="rgba(255,255,255,0.68)" stroke-width="11" stroke-linecap="round" fill="none"/>
+</svg>

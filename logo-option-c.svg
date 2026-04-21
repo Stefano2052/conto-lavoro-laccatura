@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="115" fill="#E79E2F"/>
+
+  <!-- Corpo ugello -->
+  <rect x="72" y="212" width="200" height="88" rx="26" fill="white"/>
+
+  <!-- Calotta frontale (air cap) -->
+  <ellipse cx="285" cy="256" rx="22" ry="48" fill="white"/>
+
+  <!-- Corna d'aria (air horns) -->
+  <rect x="272" y="194" width="28" height="24" rx="9" fill="white"/>
+  <rect x="272" y="294" width="28" height="24" rx="9" fill="white"/>
+
+  <!-- Vena di spray (5 archi a ventaglio) -->
+  <path d="M 308 256 C 352 236 408 224 474 210" stroke="rgba(255,255,255,0.52)" stroke-width="9"  stroke-linecap="round" fill="none"/>
+  <path d="M 308 256 C 354 248 410 244 474 242" stroke="rgba(255,255,255,0.70)" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M 308 256 C 362 256 414 256 474 256" stroke="rgba(255,255,255,0.88)" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M 308 256 C 354 264 410 268 474 270" stroke="rgba(255,255,255,0.70)" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M 308 256 C 352 276 408 288 474 302" stroke="rgba(255,255,255,0.52)" stroke-width="9"  stroke-linecap="round" fill="none"/>
+</svg>
