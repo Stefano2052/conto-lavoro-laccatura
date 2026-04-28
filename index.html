@@ -829,6 +829,14 @@
     var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
     var _activityItems = [];
     var _activityVisible = 10;
+    var _prelWaitingItems = [];
+    var _prelWaitingVisible = 5;
+    var _prelStoricoItems = [];
+    var _prelStoricoVisible = 5;
+    var _ricWaitingItems = [];
+    var _ricWaitingVisible = 5;
+    var _ricStoricoItems = [];
+    var _ricStoricoVisible = 5;
     var _successOverlayTimer = null;
 
     function formatDateOnly(dateStr) {
@@ -1460,27 +1468,39 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
         items.sort(function(a, b) { return String(b.dataPrelievo).localeCompare(String(a.dataPrelievo)); });
-        if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
-          return;
-        }
-        var html = '';
-        items.forEach(function(item) {
-          var odv = String(item.odv || '');
-          html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaPrelievo(\'' + odv + '\')">';
-          html += '<div class="log-dot aperto"></div>';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || '') + '</div>';
-          html += '</div>';
-          html += '<div class="log-cancel">&#10005; Annulla</div>';
-          html += '</div>';
-        });
-        container.innerHTML = html;
+        _prelStoricoItems = items;
+        _prelStoricoVisible = 5;
+        renderStoricoPrelievi();
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        document.getElementById('prel-session-log').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
+
+    function renderStoricoPrelievi() {
+      var container = document.getElementById('prel-session-log');
+      if (!_prelStoricoItems.length) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
+        return;
+      }
+      var html = '';
+      _prelStoricoItems.slice(0, _prelStoricoVisible).forEach(function(item) {
+        var odv = String(item.odv || '');
+        html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaPrelievo(\'' + odv + '\')">';
+        html += '<div class="log-dot aperto"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || '') + '</div>';
+        html += '</div>';
+        html += '<div class="log-cancel">&#10005; Annulla</div>';
+        html += '</div>';
+      });
+      if (_prelStoricoVisible < _prelStoricoItems.length) {
+        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroStoricoPrelievi()">Mostra altro</button></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function mostraAltroStoricoPrelievi() { _prelStoricoVisible += 5; renderStoricoPrelievi(); }
 
     async function caricaStoricoRicezioni() {
       var container = document.getElementById('ric-session-log');
@@ -1489,27 +1509,39 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
         items.sort(function(a, b) { return String(b.dataConsegnaEffettiva).localeCompare(String(a.dataConsegnaEffettiva)); });
-        if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
-          return;
-        }
-        var html = '';
-        items.forEach(function(item) {
-          var odv = String(item.odv || '');
-          html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaRicezione(\'' + odv + '\')">';
-          html += '<div class="log-dot chiuso"></div>';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">' + escapeHtml(item.dataConsegnaEffettiva || '') + '</div>';
-          html += '</div>';
-          html += '<div class="log-cancel">&#10005; Annulla</div>';
-          html += '</div>';
-        });
-        container.innerHTML = html;
+        _ricStoricoItems = items;
+        _ricStoricoVisible = 5;
+        renderStoricoRicezioni();
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        document.getElementById('ric-session-log').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
+
+    function renderStoricoRicezioni() {
+      var container = document.getElementById('ric-session-log');
+      if (!_ricStoricoItems.length) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
+        return;
+      }
+      var html = '';
+      _ricStoricoItems.slice(0, _ricStoricoVisible).forEach(function(item) {
+        var odv = String(item.odv || '');
+        html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaRicezione(\'' + odv + '\')">';
+        html += '<div class="log-dot chiuso"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-date">' + escapeHtml(item.dataConsegnaEffettiva || '') + '</div>';
+        html += '</div>';
+        html += '<div class="log-cancel">&#10005; Annulla</div>';
+        html += '</div>';
+      });
+      if (_ricStoricoVisible < _ricStoricoItems.length) {
+        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroStoricoRicezioni()">Mostra altro</button></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function mostraAltroStoricoRicezioni() { _ricStoricoVisible += 5; renderStoricoRicezioni(); }
 
     function chiediAnnullaPrelievo(odv) {
       if (!confirm('Annullare il prelievo di ODV: ' + odv + '?')) return;
@@ -1689,26 +1721,38 @@
           var db = b.dataSpedizioneCliente || '';
           return da > db ? -1 : da < db ? 1 : 0;
         });
-        if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
-          return;
-        }
-        var html = '';
-        items.forEach(function(item) {
-          html += '<div class="log-item">';
-          html += '<div class="log-dot aperto"></div>';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
-          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
-          html += '</div>';
-          html += '</div>';
-        });
-        container.innerHTML = html;
+        _prelWaitingItems = items;
+        _prelWaitingVisible = 5;
+        renderAttesaPrelievo();
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        document.getElementById('prel-waiting-list').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
+
+    function renderAttesaPrelievo() {
+      var container = document.getElementById('prel-waiting-list');
+      if (!_prelWaitingItems.length) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+        return;
+      }
+      var html = '';
+      _prelWaitingItems.slice(0, _prelWaitingVisible).forEach(function(item) {
+        html += '<div class="log-item">';
+        html += '<div class="log-dot aperto"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
+        html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      if (_prelWaitingVisible < _prelWaitingItems.length) {
+        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroAttesaPrelievo()">Mostra altro</button></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function mostraAltroAttesaPrelievo() { _prelWaitingVisible += 5; renderAttesaPrelievo(); }
 
     async function caricaOdvInAttesaRicezione() {
       var container = document.getElementById('ric-waiting-list');
@@ -1721,26 +1765,38 @@
           var db = b.dataConsegnaPrevista || '';
           return da > db ? -1 : da < db ? 1 : 0;
         });
-        if (!items.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
-          return;
-        }
-        var html = '';
-        items.forEach(function(item) {
-          html += '<div class="log-item">';
-          html += '<div class="log-dot aperto"></div>';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
-          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
-          html += '</div>';
-          html += '</div>';
-        });
-        container.innerHTML = html;
+        _ricWaitingItems = items;
+        _ricWaitingVisible = 5;
+        renderAttesaRicezione();
       } catch (err) {
-        container.innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        document.getElementById('ric-waiting-list').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
     }
+
+    function renderAttesaRicezione() {
+      var container = document.getElementById('ric-waiting-list');
+      if (!_ricWaitingItems.length) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+        return;
+      }
+      var html = '';
+      _ricWaitingItems.slice(0, _ricWaitingVisible).forEach(function(item) {
+        html += '<div class="log-item">';
+        html += '<div class="log-dot aperto"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
+        html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      if (_ricWaitingVisible < _ricWaitingItems.length) {
+        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroAttesaRicezione()">Mostra altro</button></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function mostraAltroAttesaRicezione() { _ricWaitingVisible += 5; renderAttesaRicezione(); }
 
     function showToast(message, type) {
       var toast = document.getElementById('toast');
