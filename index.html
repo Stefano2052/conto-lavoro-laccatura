@@ -809,6 +809,8 @@
           Quagga.decodeSingle({
             decoder: { readers: ['code_128_reader'], multiple: false },
             locate: true,
+            numOfWorkers: 0,
+            inputStream: { size: 2048 },
             src: url
           }, function(result) {
             URL.revokeObjectURL(url);
@@ -825,7 +827,7 @@
     // Carica un file immagine in un canvas applicando la correzione EXIF (fondamentale su iOS Safari)
     // e ridimensiona se l'immagine supera maxDimension pixel sul lato più lungo.
     function loadImageToCanvas(file, maxDimension) {
-      maxDimension = maxDimension || 1920;
+      maxDimension = maxDimension || 2560;
       return new Promise(function(resolve, reject) {
         var url = URL.createObjectURL(file);
         var img = new Image();
