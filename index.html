@@ -1088,7 +1088,12 @@
     var _scanCallback   = null;
     var _scannerRunning = false;
 
+    function _isNativeScanAvailable() {
+      return 'BarcodeDetector' in window;
+    }
+
     async function openScannerForPhase(phase) {
+      if (_isNativeScanAvailable()) { capturePhoto(phase); return; }
       var qLoaded = await ensureQuaggaLoaded();
       if (!qLoaded) { capturePhoto(phase); return; }
       _scanCallback = function(code) { onBarcodeDetected(code, phase); };
@@ -1096,6 +1101,7 @@
     }
 
     async function openScannerForRegField(field) {
+      if (_isNativeScanAvailable()) { capturePhotoForRegField(field); return; }
       var qLoaded = await ensureQuaggaLoaded();
       if (!qLoaded) { capturePhotoForRegField(field); return; }
       _scanCallback = function(code) {
