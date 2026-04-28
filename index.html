@@ -465,9 +465,7 @@
       color: var(--text-secondary);
       text-align: center;
       padding: 4px 8px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      word-break: break-word;
     }
     .scan-debug.active { color: var(--success-text); }
     .scan-debug.warn   { color: var(--primary-dark); }
@@ -796,17 +794,27 @@
         var img = new Image();
         img.onload = function() {
           URL.revokeObjectURL(url);
-          var w = img.naturalWidth, h = img.naturalHeight;
+          var origW = img.naturalWidth, origH = img.naturalHeight;
+          if (!origW || !origH) { reject(new Error('img naturalSize=0')); return; }
+          var w = origW, h = origH;
           if (w > maxDimension || h > maxDimension) {
             if (w >= h) { h = Math.round(h * maxDimension / w); w = maxDimension; }
             else        { w = Math.round(w * maxDimension / h); h = maxDimension; }
           }
           var canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          try {
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          } catch(e) {
+            reject(new Error('drawImage: ' + (e.message || e))); return;
+          }
+          canvas._origSize = origW + 'x' + origH;
           resolve(canvas);
         };
-        img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Caricamento immagine fallito')); };
+        img.onerror = function() {
+          URL.revokeObjectURL(url);
+          reject(new Error('img.onerror (caricamento fallito)'));
+        };
         img.src = url;
       });
     }
@@ -823,43 +831,81 @@
     }
 
     // Tenta di leggere un codice a barre da un canvas.
-    // Prova BarcodeDetector (Android/Chrome) poi ZXing low-level con 4 rotazioni.
-    // L'API low-level (MultiFormatReader + RGBLuminanceSource) è compatibile con iOS Safari
-    // a differenza di BrowserMultiFormatReader.decodeFromCanvas() che ha problemi su Safari.
+    // Restituisce { code, diag } dove diag contiene la traccia diagnostica di cosa è successo.
     async function decodeBarcode(canvas) {
+      var trace = [];
+
       if ('BarcodeDetector' in window) {
         try {
           var det = new BarcodeDetector({ formats: ['code_128'] });
           var found = await det.detect(canvas);
-          if (found.length > 0) return found[0].rawValue;
-        } catch(e) {}
+          trace.push('BD=' + found.length);
+          if (found.length > 0) return { code: found[0].rawValue, diag: trace.join(' ') };
+        } catch(e) {
+          trace.push('BD-err:' + (e.name || e.message || 'x'));
+        }
+      } else {
+        trace.push('BD-no');
       }
 
-      if (!window.ZXing) await ensureZXingLoaded();
-      if (!window.ZXing) return null;
+      if (!window.ZXing) {
+        var ok = await ensureZXingLoaded();
+        trace.push('ZX-load=' + ok);
+      }
+      if (!window.ZXing) {
+        trace.push('ZX-fail');
+        return { code: null, diag: trace.join(' ') };
+      }
 
-      var hints = new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      var coreReader = new ZXing.MultiFormatReader();
-      coreReader.setHints(hints);
+      var miss = [];
+      if (!ZXing.MultiFormatReader)  miss.push('MFR');
+      if (!ZXing.RGBLuminanceSource) miss.push('RGBLS');
+      if (!ZXing.BinaryBitmap)       miss.push('BB');
+      if (!ZXing.HybridBinarizer)    miss.push('HB');
+      if (miss.length) {
+        trace.push('ZX-API-miss=' + miss.join(','));
+        return { code: null, diag: trace.join(' ') };
+      }
+
+      var hints, coreReader;
+      try {
+        hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        coreReader = new ZXing.MultiFormatReader();
+        coreReader.setHints(hints);
+      } catch(e) {
+        trace.push('init-err:' + (e.name || e.message));
+        return { code: null, diag: trace.join(' ') };
+      }
 
       var c = canvas;
       for (var rot = 0; rot < 4; rot++) {
+        var tag = 'r' + (rot * 90);
         try {
-          var imageData = c.getContext('2d').getImageData(0, 0, c.width, c.height);
-          if (imageData) {
-            var luminance = new ZXing.RGBLuminanceSource(imageData.data, c.width, c.height);
-            var binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
-            var result = coreReader.decodeWithState(binaryBitmap);
-            if (result) return result.getText();
+          var ctx = c.getContext('2d');
+          var imageData = ctx.getImageData(0, 0, c.width, c.height);
+          if (!imageData || !imageData.data) { trace.push(tag + ':noImgData'); }
+          else {
+            var lum = new ZXing.RGBLuminanceSource(imageData.data, c.width, c.height);
+            var bb = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+            var res = coreReader.decodeWithState(bb);
+            if (res && typeof res.getText === 'function') {
+              trace.push(tag + ':OK');
+              return { code: res.getText(), diag: trace.join(' ') };
+            }
+            trace.push(tag + ':noRes');
           }
         } catch(e) {
-          // NotFoundException è normale quando il codice non è trovato in questa rotazione
+          var ename = (e && (e.name || (e.constructor && e.constructor.name))) || 'err';
+          trace.push(tag + ':' + ename);
         }
-        if (rot < 3) c = rotateCanvas90(c);
+        if (rot < 3) {
+          try { c = rotateCanvas90(c); }
+          catch(e) { trace.push('rot-err'); break; }
+        }
       }
-      return null;
+      return { code: null, diag: trace.join(' ') };
     }
 
     // ================================================
@@ -919,22 +965,37 @@
       if (btnEl) btnEl.disabled = true;
       setDebug('Lettura codice a barre...', 'active');
 
-      try {
-        var canvas = await loadImageToCanvas(file);
-        var code = await decodeBarcode(canvas);
+      var fileInfo = 'file=' + (file.type || '?') + ' ' + Math.round((file.size || 0) / 1024) + 'KB';
+      var canvas = null;
 
-        if (code) {
-          setDebug('Letto: ' + code, 'active');
-          onBarcodeDetected(code, phase);
+      try {
+        try {
+          canvas = await loadImageToCanvas(file);
+        } catch(e) {
+          var loadMsg = 'LOAD FAIL: ' + (e.message || e);
+          setDebug(loadMsg, 'warn');
+          alert('DEBUG iPhone — ' + loadMsg + '\n' + fileInfo);
+          return;
+        }
+
+        var canvasInfo = 'canvas=' + canvas.width + 'x' + canvas.height + (canvas._origSize ? ' (orig ' + canvas._origSize + ')' : '');
+        var result = await decodeBarcode(canvas);
+
+        if (result && result.code) {
+          setDebug('Letto: ' + result.code, 'active');
+          onBarcodeDetected(result.code, phase);
         } else {
-          setDebug('Nessun codice trovato — riprova', '');
-          showToast('Nessun codice trovato nella foto — riprova', 'warning');
+          var diag = (result && result.diag) || 'no-trace';
+          setDebug('No code — vedi popup', 'warn');
+          alert('DEBUG iPhone — Nessun codice trovato\n\n' +
+                fileInfo + '\n' + canvasInfo + '\n\nTrace:\n' + diag);
         }
 
       } catch(err) {
         console.error('[Photo scan]', err);
-        setDebug('Errore lettura — riprova', '');
-        showToast('Errore durante la lettura della foto', 'error');
+        var msg = 'ERR: ' + (err && err.message ? err.message : err);
+        setDebug(msg, 'warn');
+        alert('DEBUG iPhone — ' + msg + '\n' + fileInfo);
       } finally {
         if (btnEl) btnEl.disabled = false;
       }
@@ -987,15 +1048,27 @@
       if (btnEl) btnEl.disabled = true;
       setDebug('Lettura codice a barre...', 'active');
 
-      try {
-        var canvas = await loadImageToCanvas(file);
-        var code = await decodeBarcode(canvas);
+      var fileInfo = 'file=' + (file.type || '?') + ' ' + Math.round((file.size || 0) / 1024) + 'KB';
+      var canvas = null;
 
-        if (code) {
-          var cleanCode = String(code).trim();
+      try {
+        try {
+          canvas = await loadImageToCanvas(file);
+        } catch(e) {
+          var loadMsg = 'LOAD FAIL: ' + (e.message || e);
+          setDebug(loadMsg, 'warn');
+          alert('DEBUG iPhone — ' + loadMsg + '\n' + fileInfo);
+          return;
+        }
+
+        var canvasInfo = 'canvas=' + canvas.width + 'x' + canvas.height + (canvas._origSize ? ' (orig ' + canvas._origSize + ')' : '');
+        var result = await decodeBarcode(canvas);
+
+        if (result && result.code) {
+          var cleanCode = String(result.code).trim();
           if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
-            setDebug('Codice non valido — riprova', 'warn');
-            showToast('Codice non riconosciuto — riprova', 'warning');
+            setDebug('Codice non valido: ' + cleanCode, 'warn');
+            alert('DEBUG iPhone — Codice non valido (regex)\n\nLetto: "' + cleanCode + '"\n\nTrace:\n' + (result.diag || '-'));
           } else {
             if (navigator.vibrate) navigator.vibrate(100);
             fieldEl.value = cleanCode;
@@ -1006,14 +1079,17 @@
             checkRegReady();
           }
         } else {
-          setDebug('Nessun codice trovato — riprova', '');
-          showToast('Nessun codice trovato nella foto — riprova', 'warning');
+          var diag = (result && result.diag) || 'no-trace';
+          setDebug('No code — vedi popup', 'warn');
+          alert('DEBUG iPhone — Nessun codice trovato\n\n' +
+                fileInfo + '\n' + canvasInfo + '\n\nTrace:\n' + diag);
         }
 
       } catch(err) {
         console.error('[Photo scan]', err);
-        setDebug('Errore lettura — riprova', '');
-        showToast('Errore durante la lettura della foto', 'error');
+        var msg = 'ERR: ' + (err && err.message ? err.message : err);
+        setDebug(msg, 'warn');
+        alert('DEBUG iPhone — ' + msg + '\n' + fileInfo);
       } finally {
         if (btnEl) btnEl.disabled = false;
       }
