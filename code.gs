@@ -5,7 +5,7 @@
 
 // === CONFIGURAZIONE ===
 var SPREADSHEET_ID = '13a2pJwJzPGgDQsXe2jTJhic2yHUlonmROD3aSkYq04k';
-var SHEET_NAME = 'Laccatura';
+var SHEET_NAME = 'Database';
 
 // === COLONNE (A=1, B=2, ...) ===
 // A: ODV
