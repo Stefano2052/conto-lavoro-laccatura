@@ -1613,9 +1613,9 @@
 
       var items = (_monitorData[tipo] || []).slice();
       items.sort(function(a, b) {
-        var da = a.dataSpedizioneCliente || '';
-        var db = b.dataSpedizioneCliente || '';
-        return da > db ? -1 : da < db ? 1 : 0;
+        var ca = (a.cl || '').toLowerCase();
+        var cb = (b.cl || '').toLowerCase();
+        return ca < cb ? -1 : ca > cb ? 1 : 0;
       });
 
       if (!items.length) {
@@ -1625,8 +1625,10 @@
         items.forEach(function(item) {
           html += '<div class="log-item">';
           html += '<div class="log-info">';
-          html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
-          html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+          html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;">';
+          html += '<span>' + escapeHtml(item.odv || '') + '</span>';
+          html += '<span>' + escapeHtml(item.cl || '') + '</span>';
+          html += '</div>';
           html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
           html += '</div>';
           html += '</div>';
