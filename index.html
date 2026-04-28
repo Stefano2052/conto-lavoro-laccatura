@@ -824,6 +824,38 @@
       });
     }
 
+    // Quagga2 sul file originale — evita la doppia compressione canvas→JPEG
+    function quaggaDecodeFile(file) {
+      return new Promise(function(resolve) {
+        var url = URL.createObjectURL(file);
+        Quagga.decodeSingle({
+          decoder: { readers: ['code_128_reader'], multiple: false },
+          locate: true,
+          numOfWorkers: 0,
+          inputStream: { size: 2048 },
+          src: url
+        }, function(result) {
+          URL.revokeObjectURL(url);
+          if (result && result.codeResult && result.codeResult.code) {
+            resolve(result.codeResult.code);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    // Canvas con alto contrasto e desaturazione per ridurre l'effetto glare/riflessi
+    function createEnhancedCanvas(canvas) {
+      var eCanvas = document.createElement('canvas');
+      eCanvas.width = canvas.width; eCanvas.height = canvas.height;
+      var ctx = eCanvas.getContext('2d');
+      try { ctx.filter = 'grayscale(1) contrast(2.2) brightness(0.85)'; } catch(e) {}
+      ctx.drawImage(canvas, 0, 0);
+      try { ctx.filter = 'none'; } catch(e) {}
+      return eCanvas;
+    }
+
     // Carica un file immagine in un canvas applicando la correzione EXIF (fondamentale su iOS Safari)
     // e ridimensiona se l'immagine supera maxDimension pixel sul lato più lungo.
     function loadImageToCanvas(file, maxDimension) {
@@ -848,6 +880,7 @@
             reject(new Error('drawImage: ' + (e.message || e))); return;
           }
           canvas._origSize = origW + 'x' + origH;
+          canvas._file = file;
           resolve(canvas);
         };
         img.onerror = function() {
@@ -946,21 +979,31 @@
         }
       }
 
-      // ZXing ha fallito su tutti gli angoli — prova Quagga2 che usa un
-      // localizzatore visivo molto più robusto per foto reali
+      // ZXing fallito — tenta Quagga2 con 3 strategie in ordine crescente di elaborazione
       var qLoaded = await ensureQuaggaLoaded();
       trace.push('Q=' + qLoaded);
       if (qLoaded) {
-        try {
-          var qCode = await quaggaDecode(canvas);
-          if (qCode) {
-            trace.push('Q:OK');
-            return { code: qCode, diag: trace.join(' ') };
-          }
-          trace.push('Q:no');
-        } catch(e) {
-          trace.push('Q:err:' + (e.name || e.message || 'x'));
+        // Tentativo 1: file originale (qualità JPEG massima, nessuna conversione)
+        if (canvas._file) {
+          try {
+            var qCode = await quaggaDecodeFile(canvas._file);
+            if (qCode) { trace.push('Qf:OK'); return { code: qCode, diag: trace.join(' ') }; }
+            trace.push('Qf:no');
+          } catch(e) { trace.push('Qf:err'); }
         }
+        // Tentativo 2: canvas normale
+        try {
+          var qCode2 = await quaggaDecode(canvas);
+          if (qCode2) { trace.push('Qc:OK'); return { code: qCode2, diag: trace.join(' ') }; }
+          trace.push('Qc:no');
+        } catch(e) { trace.push('Qc:err'); }
+        // Tentativo 3: canvas con alto contrasto/grayscale per ridurre glare
+        try {
+          var eCanvas = createEnhancedCanvas(canvas);
+          var qCode3 = await quaggaDecode(eCanvas);
+          if (qCode3) { trace.push('Qe:OK'); return { code: qCode3, diag: trace.join(' ') }; }
+          trace.push('Qe:no');
+        } catch(e) { trace.push('Qe:err'); }
       }
 
       return { code: null, diag: trace.join(' ') };
