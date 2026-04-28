@@ -823,7 +823,9 @@
     }
 
     // Tenta di leggere un codice a barre da un canvas.
-    // Prova BarcodeDetector (Android/Chrome) poi ZXing con 4 rotazioni (0°, 90°, 180°, 270°).
+    // Prova BarcodeDetector (Android/Chrome) poi ZXing low-level con 4 rotazioni.
+    // L'API low-level (MultiFormatReader + RGBLuminanceSource) è compatibile con iOS Safari
+    // a differenza di BrowserMultiFormatReader.decodeFromCanvas() che ha problemi su Safari.
     async function decodeBarcode(canvas) {
       if ('BarcodeDetector' in window) {
         try {
@@ -839,19 +841,23 @@
       var hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      var reader = new ZXing.BrowserMultiFormatReader(hints);
+      var coreReader = new ZXing.MultiFormatReader();
+      coreReader.setHints(hints);
 
-      var c0 = canvas;
-      var c90 = rotateCanvas90(c0);
-      var c180 = rotateCanvas90(c90);
-      var c270 = rotateCanvas90(c180);
-
-      var rotations = [c0, c90, c180, c270];
-      for (var i = 0; i < rotations.length; i++) {
+      var c = canvas;
+      for (var rot = 0; rot < 4; rot++) {
         try {
-          var res = await reader.decodeFromCanvas(rotations[i]);
-          if (res) return typeof res.getText === 'function' ? res.getText() : res.text;
-        } catch(e) {}
+          var imageData = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+          if (imageData) {
+            var luminance = new ZXing.RGBLuminanceSource(imageData.data, c.width, c.height);
+            var binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+            var result = coreReader.decodeWithState(binaryBitmap);
+            if (result) return result.getText();
+          }
+        } catch(e) {
+          // NotFoundException è normale quando il codice non è trovato in questa rotazione
+        }
+        if (rot < 3) c = rotateCanvas90(c);
       }
       return null;
     }
