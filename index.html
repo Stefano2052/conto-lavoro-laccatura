@@ -470,6 +470,67 @@
     .scan-debug.active { color: var(--success-text); }
     .scan-debug.warn   { color: var(--primary-dark); }
 
+    /* Scanner live overlay */
+    .scanner-overlay {
+      position: fixed; inset: 0;
+      background: #000;
+      z-index: 400;
+      display: flex; flex-direction: column;
+    }
+    .scanner-overlay.hidden { display: none; }
+    .scanner-topbar {
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .scanner-topbar-title {
+      font-size: 14px; font-weight: 700; color: #fff;
+      flex: 1; text-align: center;
+    }
+    .scanner-close-btn {
+      background: none; border: 1.5px solid rgba(255,255,255,0.6);
+      color: #fff; padding: 7px 14px;
+      border-radius: 20px; font-size: 13px; font-weight: 700;
+      cursor: pointer; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scanner-viewport {
+      flex: 1; position: relative; overflow: hidden;
+    }
+    .scanner-viewport video,
+    .scanner-viewport canvas {
+      position: absolute; top: 0; left: 0;
+      width: 100% !important; height: 100% !important;
+      object-fit: cover;
+    }
+    .scanner-viewport canvas { opacity: 0.55; }
+    .scanner-guide {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 82%; max-width: 340px; height: 110px;
+      border: 3px solid var(--primary);
+      border-radius: 12px;
+      box-shadow: 0 0 0 1500px rgba(0,0,0,0.48);
+      pointer-events: none; z-index: 1;
+    }
+    .scanner-guide::after {
+      content: '';
+      position: absolute; left: 6%; right: 6%;
+      height: 2px; background: var(--primary); opacity: 0.9;
+      animation: scanline 1.8s ease-in-out infinite;
+    }
+    @keyframes scanline {
+      0%, 100% { top: 8%; }
+      50% { top: 84%; }
+    }
+    .scanner-hint {
+      padding: 18px 16px;
+      background: rgba(0,0,0,0.75);
+      color: rgba(255,255,255,0.85);
+      font-size: 14px; text-align: center;
+    }
+
     /* Banner installazione iOS */
     .ios-install-banner {
       position: fixed;
@@ -569,7 +630,7 @@
           </div>
           <div class="field-input-row">
             <input type="text" class="field-input" id="reg-odv" placeholder="Digita o scansiona il codice ODV" oninput="checkRegReady()">
-            <button class="btn-scan-inline" id="reg-odv-scan-btn" onclick="capturePhotoForRegField('odv')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+            <button class="btn-scan-inline" id="reg-odv-scan-btn" onclick="openScannerForRegField('odv')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
           </div>
           <input type="file" id="file-reg-odv" accept="image/*" capture="environment" style="display:none" onchange="processRegFieldPhoto(this,'odv')">
           <div class="scan-debug" id="reg-odv-debug"></div>
@@ -581,7 +642,7 @@
           </div>
           <div class="field-input-row">
             <input type="text" class="field-input" id="reg-cl" placeholder="Digita o scansiona il codice CL" oninput="checkRegReady()">
-            <button class="btn-scan-inline" id="reg-cl-scan-btn" onclick="capturePhotoForRegField('cl')" title="Scansiona CL"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+            <button class="btn-scan-inline" id="reg-cl-scan-btn" onclick="openScannerForRegField('cl')" title="Scansiona CL"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
           </div>
           <input type="file" id="file-reg-cl" accept="image/*" capture="environment" style="display:none" onchange="processRegFieldPhoto(this,'cl')">
           <div class="scan-debug" id="reg-cl-debug"></div>
@@ -605,7 +666,7 @@
           <div class="field-label">Codice ODV</div>
           <div class="field-input-row">
             <input type="text" class="field-input" id="prel-odv" placeholder="Digita o scansiona il codice ODV" oninput="document.getElementById('prel-confirm-btn').disabled=!this.value.trim()">
-            <button class="btn-scan-inline" id="prel-scan-btn" onclick="capturePhoto('prelievo')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+            <button class="btn-scan-inline" id="prel-scan-btn" onclick="openScannerForPhase('prelievo')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
           </div>
           <input type="file" id="file-prel" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'prelievo')">
           <div class="scan-debug" id="prel-scan-debug"></div>
@@ -638,7 +699,7 @@
           <div class="field-label">Codice ODV</div>
           <div class="field-input-row">
             <input type="text" class="field-input" id="ric-odv" placeholder="Digita o scansiona il codice ODV" oninput="document.getElementById('ric-confirm-btn').disabled=!this.value.trim()">
-            <button class="btn-scan-inline" id="ric-scan-btn" onclick="capturePhoto('ricezione')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
+            <button class="btn-scan-inline" id="ric-scan-btn" onclick="openScannerForPhase('ricezione')" title="Scansiona ODV"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="2" height="18"/><rect x="4" y="3" width="1" height="18"/><rect x="6" y="3" width="3" height="18"/><rect x="10" y="3" width="1" height="18"/><rect x="12" y="3" width="2" height="18"/><rect x="15" y="3" width="1" height="18"/><rect x="17" y="3" width="3" height="18"/><rect x="21" y="3" width="2" height="18"/></svg></button>
           </div>
           <input type="file" id="file-ric" accept="image/*" capture="environment" style="display:none" onchange="processPhotoFile(this,'ricezione')">
           <div class="scan-debug" id="ric-scan-debug"></div>
@@ -727,6 +788,18 @@
         <span>Tocca <strong>Aggiungi</strong> in alto a destra</span>
       </div>
     </div>
+  </div>
+
+  <!-- Scanner live overlay -->
+  <div class="scanner-overlay hidden" id="scanner-overlay">
+    <div class="scanner-topbar">
+      <div class="scanner-topbar-title">Inquadra il codice a barre</div>
+      <button class="scanner-close-btn" onclick="closeScanner()">Annulla</button>
+    </div>
+    <div class="scanner-viewport" id="scanner-viewport">
+      <div class="scanner-guide"></div>
+    </div>
+    <div class="scanner-hint" id="scanner-hint">Avvicina il barcode al riquadro arancione</div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1010,6 +1083,89 @@
     }
 
     // ================================================
+    // SCANNER LIVE (Quagga2 video stream)
+    // ================================================
+    var _scanCallback   = null;
+    var _scannerRunning = false;
+
+    async function openScannerForPhase(phase) {
+      var qLoaded = await ensureQuaggaLoaded();
+      if (!qLoaded) { capturePhoto(phase); return; }
+      _scanCallback = function(code) { onBarcodeDetected(code, phase); };
+      _startLiveScanner(function() { capturePhoto(phase); });
+    }
+
+    async function openScannerForRegField(field) {
+      var qLoaded = await ensureQuaggaLoaded();
+      if (!qLoaded) { capturePhotoForRegField(field); return; }
+      _scanCallback = function(code) {
+        var cleanCode = String(code).trim();
+        if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+          showToast('Codice non riconosciuto — riprova', 'warning'); return;
+        }
+        var fieldEl = document.getElementById('reg-' + field);
+        var badgeEl = document.getElementById('reg-' + field + '-badge');
+        if (navigator.vibrate) navigator.vibrate(100);
+        fieldEl.value = cleanCode;
+        fieldEl.classList.add('scanned');
+        if (badgeEl) badgeEl.style.display = 'inline-flex';
+        document.getElementById('reg-' + field + '-debug').textContent = 'Letto: ' + cleanCode;
+        document.getElementById('reg-' + field + '-debug').className = 'scan-debug active';
+        showToast((field === 'odv' ? 'ODV' : 'CL') + ' scansionato!', 'success');
+        checkRegReady();
+      };
+      _startLiveScanner(function() { capturePhotoForRegField(field); });
+    }
+
+    function _startLiveScanner(onFallback) {
+      _scannerRunning = false;
+      document.getElementById('scanner-overlay').classList.remove('hidden');
+      document.getElementById('scanner-hint').textContent = 'Avvicina il barcode al riquadro arancione';
+      var viewport = document.getElementById('scanner-viewport');
+      try { Quagga.stop(); } catch(e) {}
+
+      Quagga.init({
+        inputStream: {
+          name: 'Live', type: 'LiveStream',
+          target: viewport,
+          constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        },
+        decoder: { readers: ['code_128_reader'], multiple: false },
+        locate: true,
+        numOfWorkers: 0
+      }, function(err) {
+        if (err) {
+          closeScanner();
+          if (onFallback) { onFallback(); }
+          else { showToast('Fotocamera non disponibile', 'error'); }
+          return;
+        }
+        _scannerRunning = true;
+        Quagga.start();
+        Quagga.onDetected(function(data) {
+          if (!_scannerRunning) return;
+          var code = data && data.codeResult && data.codeResult.code;
+          if (!code) return;
+          _scannerRunning = false;
+          if (navigator.vibrate) navigator.vibrate(100);
+          closeScanner();
+          if (_scanCallback) { _scanCallback(code); _scanCallback = null; }
+        });
+      });
+    }
+
+    function closeScanner() {
+      _scannerRunning = false;
+      document.getElementById('scanner-overlay').classList.add('hidden');
+      try { Quagga.offDetected(); Quagga.stop(); } catch(e) {}
+    }
+
+    // Ferma la fotocamera se l'utente esce dall'app
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden && _scannerRunning) closeScanner();
+    });
+
+    // ================================================
     // NAVIGAZIONE
     // ================================================
     function switchPhase(phase) {
@@ -1073,30 +1229,25 @@
         try {
           canvas = await loadImageToCanvas(file);
         } catch(e) {
-          var loadMsg = 'LOAD FAIL: ' + (e.message || e);
-          setDebug(loadMsg, 'warn');
-          alert('DEBUG iPhone — ' + loadMsg + '\n' + fileInfo);
+          setDebug('Errore caricamento immagine', 'warn');
+          showToast('Errore caricamento immagine — riprova', 'error');
           return;
         }
 
-        var canvasInfo = 'canvas=' + canvas.width + 'x' + canvas.height + (canvas._origSize ? ' (orig ' + canvas._origSize + ')' : '');
         var result = await decodeBarcode(canvas);
 
         if (result && result.code) {
           setDebug('Letto: ' + result.code, 'active');
           onBarcodeDetected(result.code, phase);
         } else {
-          var diag = (result && result.diag) || 'no-trace';
-          setDebug('No code — vedi popup', 'warn');
-          alert('DEBUG iPhone — Nessun codice trovato\n\n' +
-                fileInfo + '\n' + canvasInfo + '\n\nTrace:\n' + diag);
+          setDebug('Codice non trovato — riprova', 'warn');
+          showToast('Codice non trovato — riprova', 'warning');
         }
 
       } catch(err) {
         console.error('[Photo scan]', err);
-        var msg = 'ERR: ' + (err && err.message ? err.message : err);
-        setDebug(msg, 'warn');
-        alert('DEBUG iPhone — ' + msg + '\n' + fileInfo);
+        setDebug('Errore — riprova', 'warn');
+        showToast('Errore durante la scansione — riprova', 'error');
       } finally {
         if (btnEl) btnEl.disabled = false;
       }
@@ -1156,20 +1307,18 @@
         try {
           canvas = await loadImageToCanvas(file);
         } catch(e) {
-          var loadMsg = 'LOAD FAIL: ' + (e.message || e);
-          setDebug(loadMsg, 'warn');
-          alert('DEBUG iPhone — ' + loadMsg + '\n' + fileInfo);
+          setDebug('Errore caricamento immagine', 'warn');
+          showToast('Errore caricamento immagine — riprova', 'error');
           return;
         }
 
-        var canvasInfo = 'canvas=' + canvas.width + 'x' + canvas.height + (canvas._origSize ? ' (orig ' + canvas._origSize + ')' : '');
         var result = await decodeBarcode(canvas);
 
         if (result && result.code) {
           var cleanCode = String(result.code).trim();
           if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
-            setDebug('Codice non valido: ' + cleanCode, 'warn');
-            alert('DEBUG iPhone — Codice non valido (regex)\n\nLetto: "' + cleanCode + '"\n\nTrace:\n' + (result.diag || '-'));
+            setDebug('Codice non riconosciuto — riprova', 'warn');
+            showToast('Codice non riconosciuto — riprova', 'warning');
           } else {
             if (navigator.vibrate) navigator.vibrate(100);
             fieldEl.value = cleanCode;
@@ -1180,17 +1329,14 @@
             checkRegReady();
           }
         } else {
-          var diag = (result && result.diag) || 'no-trace';
-          setDebug('No code — vedi popup', 'warn');
-          alert('DEBUG iPhone — Nessun codice trovato\n\n' +
-                fileInfo + '\n' + canvasInfo + '\n\nTrace:\n' + diag);
+          setDebug('Codice non trovato — riprova', 'warn');
+          showToast('Codice non trovato — riprova', 'warning');
         }
 
       } catch(err) {
         console.error('[Photo scan]', err);
-        var msg = 'ERR: ' + (err && err.message ? err.message : err);
-        setDebug(msg, 'warn');
-        alert('DEBUG iPhone — ' + msg + '\n' + fileInfo);
+        setDebug('Errore — riprova', 'warn');
+        showToast('Errore durante la scansione — riprova', 'error');
       } finally {
         if (btnEl) btnEl.disabled = false;
       }
