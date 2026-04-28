@@ -787,6 +787,75 @@
       });
     }
 
+    // Carica un file immagine in un canvas applicando la correzione EXIF (fondamentale su iOS Safari)
+    // e ridimensiona se l'immagine supera maxDimension pixel sul lato più lungo.
+    function loadImageToCanvas(file, maxDimension) {
+      maxDimension = maxDimension || 1920;
+      return new Promise(function(resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function() {
+          URL.revokeObjectURL(url);
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (w > maxDimension || h > maxDimension) {
+            if (w >= h) { h = Math.round(h * maxDimension / w); w = maxDimension; }
+            else        { w = Math.round(w * maxDimension / h); h = maxDimension; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas);
+        };
+        img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Caricamento immagine fallito')); };
+        img.src = url;
+      });
+    }
+
+    // Ruota un canvas di 90° in senso orario e restituisce il nuovo canvas.
+    function rotateCanvas90(src) {
+      var canvas = document.createElement('canvas');
+      canvas.width = src.height; canvas.height = src.width;
+      var ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(src, -src.width / 2, -src.height / 2);
+      return canvas;
+    }
+
+    // Tenta di leggere un codice a barre da un canvas.
+    // Prova BarcodeDetector (Android/Chrome) poi ZXing con 4 rotazioni (0°, 90°, 180°, 270°).
+    async function decodeBarcode(canvas) {
+      if ('BarcodeDetector' in window) {
+        try {
+          var det = new BarcodeDetector({ formats: ['code_128'] });
+          var found = await det.detect(canvas);
+          if (found.length > 0) return found[0].rawValue;
+        } catch(e) {}
+      }
+
+      if (!window.ZXing) await ensureZXingLoaded();
+      if (!window.ZXing) return null;
+
+      var hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      var reader = new ZXing.BrowserMultiFormatReader(hints);
+
+      var c0 = canvas;
+      var c90 = rotateCanvas90(c0);
+      var c180 = rotateCanvas90(c90);
+      var c270 = rotateCanvas90(c180);
+
+      var rotations = [c0, c90, c180, c270];
+      for (var i = 0; i < rotations.length; i++) {
+        try {
+          var res = await reader.decodeFromCanvas(rotations[i]);
+          if (res) return typeof res.getText === 'function' ? res.getText() : res.text;
+        } catch(e) {}
+      }
+      return null;
+    }
+
     // ================================================
     // NAVIGAZIONE
     // ================================================
@@ -845,36 +914,8 @@
       setDebug('Lettura codice a barre...', 'active');
 
       try {
-        var bitmap = await createImageBitmap(file);
-        var code = null;
-
-        // ── Percorso A: BarcodeDetector (nativo, gestisce qualsiasi orientazione)
-        if (!code && 'BarcodeDetector' in window) {
-          try {
-            var det = new BarcodeDetector({ formats: ['code_128'] });
-            var found = await det.detect(bitmap);
-            if (found.length > 0) code = found[0].rawValue;
-          } catch(e) {}
-        }
-
-        // ── Percorso B: ZXing — se BarcodeDetector non disponibile o non ha trovato nulla
-        if (!code) {
-          if (!window.ZXing) await ensureZXingLoaded();
-          if (window.ZXing) {
-            try {
-              var canvas = document.createElement('canvas');
-              canvas.width  = bitmap.width;
-              canvas.height = bitmap.height;
-              canvas.getContext('2d').drawImage(bitmap, 0, 0);
-              var hints = new Map();
-              hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-              hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-              var reader = new ZXing.BrowserMultiFormatReader(hints);
-              var res = await reader.decodeFromCanvas(canvas);
-              if (res) code = typeof res.getText === 'function' ? res.getText() : res.text;
-            } catch(e) {}
-          }
-        }
+        var canvas = await loadImageToCanvas(file);
+        var code = await decodeBarcode(canvas);
 
         if (code) {
           setDebug('Letto: ' + code, 'active');
@@ -941,34 +982,8 @@
       setDebug('Lettura codice a barre...', 'active');
 
       try {
-        var bitmap = await createImageBitmap(file);
-        var code = null;
-
-        if (!code && 'BarcodeDetector' in window) {
-          try {
-            var det = new BarcodeDetector({ formats: ['code_128'] });
-            var found = await det.detect(bitmap);
-            if (found.length > 0) code = found[0].rawValue;
-          } catch(e) {}
-        }
-
-        if (!code) {
-          if (!window.ZXing) await ensureZXingLoaded();
-          if (window.ZXing) {
-            try {
-              var canvas = document.createElement('canvas');
-              canvas.width  = bitmap.width;
-              canvas.height = bitmap.height;
-              canvas.getContext('2d').drawImage(bitmap, 0, 0);
-              var hints = new Map();
-              hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
-              hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-              var reader = new ZXing.BrowserMultiFormatReader(hints);
-              var res = await reader.decodeFromCanvas(canvas);
-              if (res) code = typeof res.getText === 'function' ? res.getText() : res.text;
-            } catch(e) {}
-          }
-        }
+        var canvas = await loadImageToCanvas(file);
+        var code = await decodeBarcode(canvas);
 
         if (code) {
           var cleanCode = String(code).trim();
