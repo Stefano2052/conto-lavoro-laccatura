@@ -819,13 +819,18 @@
       });
     }
 
-    // Ruota un canvas di 90° in senso orario e restituisce il nuovo canvas.
-    function rotateCanvas90(src) {
+    // Ruota un canvas di un angolo arbitrario (gradi) e restituisce il nuovo canvas.
+    function rotateCanvasDeg(src, deg) {
+      if (deg === 0) return src;
+      var rad = deg * Math.PI / 180;
+      var cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+      var w = Math.ceil(src.width * cos + src.height * sin);
+      var h = Math.ceil(src.width * sin + src.height * cos);
       var canvas = document.createElement('canvas');
-      canvas.width = src.height; canvas.height = src.width;
+      canvas.width = w; canvas.height = h;
       var ctx = canvas.getContext('2d');
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(Math.PI / 2);
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(rad);
       ctx.drawImage(src, -src.width / 2, -src.height / 2);
       return canvas;
     }
@@ -879,30 +884,26 @@
         return { code: null, diag: trace.join(' ') };
       }
 
-      var c = canvas;
-      for (var rot = 0; rot < 4; rot++) {
-        var tag = 'r' + (rot * 90);
+      // Prova ogni 30° per coprire anche barcode inclinati in diagonale
+      var ANGLES = [0, 30, 60, 90, 120, 150];
+      for (var ai = 0; ai < ANGLES.length; ai++) {
+        var deg = ANGLES[ai];
+        var tag = 'r' + deg;
         try {
-          var ctx = c.getContext('2d');
-          var imageData = ctx.getImageData(0, 0, c.width, c.height);
-          if (!imageData || !imageData.data) { trace.push(tag + ':noImgData'); }
-          else {
-            var lum = new ZXing.RGBLuminanceSource(imageData.data, c.width, c.height);
-            var bb = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
-            var res = coreReader.decodeWithState(bb);
-            if (res && typeof res.getText === 'function') {
-              trace.push(tag + ':OK');
-              return { code: res.getText(), diag: trace.join(' ') };
-            }
-            trace.push(tag + ':noRes');
+          var c = rotateCanvasDeg(canvas, deg);
+          var imageData = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+          if (!imageData || !imageData.data) { trace.push(tag + ':noImgData'); continue; }
+          var lum = new ZXing.RGBLuminanceSource(imageData.data, c.width, c.height);
+          var bb = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+          var res = coreReader.decodeWithState(bb);
+          if (res && typeof res.getText === 'function') {
+            trace.push(tag + ':OK');
+            return { code: res.getText(), diag: trace.join(' ') };
           }
+          trace.push(tag + ':noRes');
         } catch(e) {
           var ename = (e && (e.name || (e.constructor && e.constructor.name))) || 'err';
           trace.push(tag + ':' + ename);
-        }
-        if (rot < 3) {
-          try { c = rotateCanvas90(c); }
-          catch(e) { trace.push('rot-err'); break; }
         }
       }
       return { code: null, diag: trace.join(' ') };
