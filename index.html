@@ -827,6 +827,8 @@
     const state = { currentPhase: 'registrazione' };
 
     var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
+    var _activityItems = [];
+    var _activityVisible = 10;
     var _successOverlayTimer = null;
 
     function formatDateOnly(dateStr) {
@@ -1570,30 +1572,46 @@
 
         _monitorData = { daPrelevare: daPrelevare, daBollettare: daBollettare, daRicevere: daRicevere };
 
-        var container = document.getElementById('activity-log');
-        var recent = items.slice(0, 15);
-        if (!recent.length) {
-          container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna registrazione</div>';
-          return;
-        }
-        var html = '';
-        recent.forEach(function(item) {
-          var statoClass = String(item.stato || '').toLowerCase();
-          html += '<div class="log-item">';
-          html += '<div class="log-dot ' + statoClass + '"></div>';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
-          html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
-          html += '</div>';
-          html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
-          html += '</div>';
-        });
-        container.innerHTML = html;
+        _activityItems = items;
+        _activityVisible = 10;
+        renderActivityLog();
       } catch (err) {
         console.error(err);
         document.getElementById('activity-log').innerHTML =
           '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
       }
+    }
+
+    function renderActivityLog() {
+      var container = document.getElementById('activity-log');
+      if (!_activityItems.length) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna registrazione</div>';
+        return;
+      }
+      var visible = _activityItems.slice(0, _activityVisible);
+      var html = '';
+      visible.forEach(function(item) {
+        var statoClass = String(item.stato || '').toLowerCase();
+        html += '<div class="log-item">';
+        html += '<div class="log-dot ' + statoClass + '"></div>';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+        html += '</div>';
+        html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
+        html += '</div>';
+      });
+      if (_activityVisible < _activityItems.length) {
+        html += '<div style="text-align:center;padding:12px 0;">';
+        html += '<button class="btn btn-secondary" onclick="mostraAltroActivity()">Mostra altro</button>';
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function mostraAltroActivity() {
+      _activityVisible += 10;
+      renderActivityLog();
     }
 
     function mostraListaMonitor(tipo) {
