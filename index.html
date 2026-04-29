@@ -827,8 +827,9 @@
     const state = { currentPhase: 'registrazione' };
 
     var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
+    var _monitorDetailVisible = 5;
     var _activityItems = [];
-    var _activityVisible = 10;
+    var _activityVisible = 5;
     var _prelWaitingItems = [];
     var _prelWaitingVisible = 5;
     var _prelStoricoItems = [];
@@ -1605,7 +1606,7 @@
         _monitorData = { daPrelevare: daPrelevare, daBollettare: daBollettare, daRicevere: daRicevere };
 
         _activityItems = items;
-        _activityVisible = 10;
+        _activityVisible = 5;
         renderActivityLog();
       } catch (err) {
         console.error(err);
@@ -1642,13 +1643,12 @@
     }
 
     function mostraAltroActivity() {
-      _activityVisible += 10;
+      _activityVisible += 5;
       renderActivityLog();
     }
 
     function mostraListaMonitor(tipo) {
       var panel  = document.getElementById('monitor-detail-panel');
-      var listEl = document.getElementById('monitor-detail-list');
       var titleEl = document.getElementById('monitor-detail-title');
 
       if (panel.dataset.tipo === tipo && panel.style.display !== 'none') {
@@ -1661,6 +1661,17 @@
       titleEl.textContent = labels[tipo] || tipo;
       panel.dataset.tipo = tipo;
 
+      _monitorDetailVisible = 5;
+      renderMonitorDetail();
+      panel.style.display = 'block';
+    }
+
+    function renderMonitorDetail() {
+      var panel = document.getElementById('monitor-detail-panel');
+      var listEl = document.getElementById('monitor-detail-list');
+      var tipo = panel.dataset.tipo;
+      if (!tipo) return;
+
       var items = (_monitorData[tipo] || []).slice();
       items.sort(function(a, b) {
         var ca = (a.cl || '').toLowerCase();
@@ -1670,24 +1681,28 @@
 
       if (!items.length) {
         listEl.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV</div>';
-      } else {
-        var html = '';
-        items.forEach(function(item) {
-          html += '<div class="log-item">';
-          html += '<div class="log-info">';
-          html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;">';
-          html += '<span>' + escapeHtml(item.odv || '') + '</span>';
-          html += '<span>' + escapeHtml(item.cl || '') + '</span>';
-          html += '</div>';
-          html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
-          html += '</div>';
-          html += '</div>';
-        });
-        listEl.innerHTML = html;
+        return;
       }
 
-      panel.style.display = 'block';
+      var html = '';
+      items.slice(0, _monitorDetailVisible).forEach(function(item) {
+        html += '<div class="log-item">';
+        html += '<div class="log-info">';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;">';
+        html += '<span>' + escapeHtml(item.odv || '') + '</span>';
+        html += '<span>' + escapeHtml(item.cl || '') + '</span>';
+        html += '</div>';
+        html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      if (_monitorDetailVisible < items.length) {
+        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroMonitorDetail()">Mostra altro</button></div>';
+      }
+      listEl.innerHTML = html;
     }
+
+    function mostraAltroMonitorDetail() { _monitorDetailVisible += 5; renderMonitorDetail(); }
 
     // ================================================
     // UTILITIES
