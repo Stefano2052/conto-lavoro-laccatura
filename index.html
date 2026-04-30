@@ -1673,11 +1673,25 @@
       if (!tipo) return;
 
       var items = (_monitorData[tipo] || []).slice();
-      items.sort(function(a, b) {
-        var ca = (a.cl || '').toLowerCase();
-        var cb = (b.cl || '').toLowerCase();
-        return ca < cb ? -1 : ca > cb ? 1 : 0;
-      });
+      if (tipo === 'daPrelevare') {
+        items.sort(function(a, b) {
+          var da = a.dataSpedizioneCliente || '';
+          var db = b.dataSpedizioneCliente || '';
+          return da > db ? -1 : da < db ? 1 : 0;
+        });
+      } else if (tipo === 'daRicevere') {
+        items.sort(function(a, b) {
+          var da = a.dataConsegnaPrevista || '';
+          var db = b.dataConsegnaPrevista || '';
+          return da > db ? -1 : da < db ? 1 : 0;
+        });
+      } else {
+        items.sort(function(a, b) {
+          var ca = (a.cl || '').toLowerCase();
+          var cb = (b.cl || '').toLowerCase();
+          return ca < cb ? -1 : ca > cb ? 1 : 0;
+        });
+      }
 
       if (!items.length) {
         listEl.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV</div>';
@@ -1686,13 +1700,16 @@
 
       var html = '';
       items.slice(0, _monitorDetailVisible).forEach(function(item) {
+        var dateLabel = tipo === 'daRicevere'
+          ? 'Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista)
+          : 'Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente);
         html += '<div class="log-item">';
         html += '<div class="log-info">';
         html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;">';
         html += '<span>' + escapeHtml(item.odv || '') + '</span>';
         html += '<span>' + escapeHtml(item.cl || '') + '</span>';
         html += '</div>';
-        html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
+        html += '<div class="log-date">' + dateLabel + '</div>';
         html += '</div>';
         html += '</div>';
       });
