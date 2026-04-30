@@ -845,6 +845,13 @@
       return String(dateStr).split('T')[0].split(' ')[0];
     }
 
+    function parseDateDMY_(s) {
+      if (!s) return 0;
+      var p = String(s).split(/[\/\s:]/);
+      if (p.length >= 3) return new Date(+p[2], +p[1] - 1, +p[0]).getTime();
+      return 0;
+    }
+
     const PHASE_ABBR = { prelievo: 'prel', ricezione: 'ric' };
     const buttonMap  = { prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
     const debugMap   = { prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
@@ -1468,7 +1475,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
-        items.sort(function(a, b) { return String(b.dataPrelievo).localeCompare(String(a.dataPrelievo)); });
+        items.sort(function(a, b) { return parseDateDMY_(b.dataPrelievo) - parseDateDMY_(a.dataPrelievo); });
         _prelStoricoItems = items;
         _prelStoricoVisible = 5;
         renderStoricoPrelievi();
@@ -1509,7 +1516,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
-        items.sort(function(a, b) { return String(b.dataConsegnaEffettiva).localeCompare(String(a.dataConsegnaEffettiva)); });
+        items.sort(function(a, b) { return parseDateDMY_(b.dataConsegnaEffettiva) - parseDateDMY_(a.dataConsegnaEffettiva); });
         _ricStoricoItems = items;
         _ricStoricoVisible = 5;
         renderStoricoRicezioni();
@@ -1675,15 +1682,11 @@
       var items = (_monitorData[tipo] || []).slice();
       if (tipo === 'daPrelevare') {
         items.sort(function(a, b) {
-          var da = a.dataSpedizioneCliente || '';
-          var db = b.dataSpedizioneCliente || '';
-          return da > db ? -1 : da < db ? 1 : 0;
+          return parseDateDMY_(b.dataSpedizioneCliente) - parseDateDMY_(a.dataSpedizioneCliente);
         });
       } else if (tipo === 'daRicevere') {
         items.sort(function(a, b) {
-          var da = a.dataConsegnaPrevista || '';
-          var db = b.dataConsegnaPrevista || '';
-          return da > db ? -1 : da < db ? 1 : 0;
+          return parseDateDMY_(b.dataConsegnaPrevista) - parseDateDMY_(a.dataConsegnaPrevista);
         });
       } else {
         items.sort(function(a, b) {
@@ -1751,9 +1754,7 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return !i.dataPrelievo; });
         items.sort(function(a, b) {
-          var da = a.dataSpedizioneCliente || '';
-          var db = b.dataSpedizioneCliente || '';
-          return da > db ? -1 : da < db ? 1 : 0;
+          return parseDateDMY_(b.dataSpedizioneCliente) - parseDateDMY_(a.dataSpedizioneCliente);
         });
         _prelWaitingItems = items;
         _prelWaitingVisible = 5;
@@ -1794,9 +1795,7 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
         items.sort(function(a, b) {
-          var da = a.dataConsegnaPrevista || '';
-          var db = b.dataConsegnaPrevista || '';
-          return da > db ? -1 : da < db ? 1 : 0;
+          return parseDateDMY_(b.dataConsegnaPrevista) - parseDateDMY_(a.dataConsegnaPrevista);
         });
         _ricWaitingItems = items;
         _ricWaitingVisible = 5;
