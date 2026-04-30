@@ -1475,7 +1475,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
-        items.sort(function(a, b) { return parseDateDMY_(a.dataPrelievo) - parseDateDMY_(b.dataPrelievo); });
+        items.sort(function(a, b) { return parseDateDMY_(b.dataPrelievo) - parseDateDMY_(a.dataPrelievo); });
         _prelStoricoItems = items;
         _prelStoricoVisible = 5;
         renderStoricoPrelievi();
@@ -1516,7 +1516,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
-        items.sort(function(a, b) { return parseDateDMY_(a.dataConsegnaEffettiva) - parseDateDMY_(b.dataConsegnaEffettiva); });
+        items.sort(function(a, b) { return parseDateDMY_(b.dataConsegnaEffettiva) - parseDateDMY_(a.dataConsegnaEffettiva); });
         _ricStoricoItems = items;
         _ricStoricoVisible = 5;
         renderStoricoRicezioni();
