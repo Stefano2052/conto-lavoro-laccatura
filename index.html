@@ -1489,7 +1489,7 @@
         html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaPrelievo(\'' + odv + '\')">';
         html += '<div class="log-dot aperto"></div>';
         html += '<div class="log-info">';
-        html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(odv) + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
         html += '<div class="log-date">' + escapeHtml(item.dataPrelievo || '') + '</div>';
         html += '</div>';
         html += '<div class="log-cancel">&#10005; Annulla</div>';
@@ -1530,7 +1530,7 @@
         html += '<div class="log-item log-item-clickable" onclick="chiediAnnullaRicezione(\'' + odv + '\')">';
         html += '<div class="log-dot chiuso"></div>';
         html += '<div class="log-info">';
-        html += '<div class="log-codes">ODV: ' + escapeHtml(odv) + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(odv) + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
         html += '<div class="log-date">' + escapeHtml(item.dataConsegnaEffettiva || '') + '</div>';
         html += '</div>';
         html += '<div class="log-cancel">&#10005; Annulla</div>';
@@ -1628,7 +1628,7 @@
         html += '<div class="log-item">';
         html += '<div class="log-dot ' + statoClass + '"></div>';
         html += '<div class="log-info">';
-        html += '<div class="log-codes">ODV: ' + escapeHtml(item.odv || '') + ' &rarr; CL: ' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(item.odv || '') + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
         html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
         html += '</div>';
         html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
@@ -1774,8 +1774,7 @@
         html += '<div class="log-item">';
         html += '<div class="log-dot aperto"></div>';
         html += '<div class="log-info">';
-        html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
-        html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(item.odv || '') + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
         html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
         html += '</div>';
         html += '</div>';
@@ -1818,8 +1817,7 @@
         html += '<div class="log-item">';
         html += '<div class="log-dot aperto"></div>';
         html += '<div class="log-info">';
-        html += '<div class="log-codes">' + escapeHtml(item.odv || '') + '</div>';
-        html += '<div class="log-codes">' + escapeHtml(item.cl || '') + '</div>';
+        html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(item.odv || '') + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
         html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
         html += '<div class="log-date">Spedizione: ' + formatDateOnly(item.dataSpedizioneCliente) + '</div>';
         html += '</div>';
