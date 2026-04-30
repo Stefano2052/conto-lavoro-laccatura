@@ -1475,7 +1475,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
-        items.sort(function(a, b) { return parseDateDMY_(b.dataPrelievo) - parseDateDMY_(a.dataPrelievo); });
+        items.sort(function(a, b) { return parseDateDMY_(a.dataPrelievo) - parseDateDMY_(b.dataPrelievo); });
         _prelStoricoItems = items;
         _prelStoricoVisible = 5;
         renderStoricoPrelievi();
@@ -1516,7 +1516,7 @@
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
-        items.sort(function(a, b) { return parseDateDMY_(b.dataConsegnaEffettiva) - parseDateDMY_(a.dataConsegnaEffettiva); });
+        items.sort(function(a, b) { return parseDateDMY_(a.dataConsegnaEffettiva) - parseDateDMY_(b.dataConsegnaEffettiva); });
         _ricStoricoItems = items;
         _ricStoricoVisible = 5;
         renderStoricoRicezioni();
@@ -1682,11 +1682,11 @@
       var items = (_monitorData[tipo] || []).slice();
       if (tipo === 'daPrelevare') {
         items.sort(function(a, b) {
-          return parseDateDMY_(b.dataSpedizioneCliente) - parseDateDMY_(a.dataSpedizioneCliente);
+          return parseDateDMY_(a.dataSpedizioneCliente) - parseDateDMY_(b.dataSpedizioneCliente);
         });
       } else if (tipo === 'daRicevere') {
         items.sort(function(a, b) {
-          return parseDateDMY_(b.dataConsegnaPrevista) - parseDateDMY_(a.dataConsegnaPrevista);
+          return parseDateDMY_(a.dataConsegnaPrevista) - parseDateDMY_(b.dataConsegnaPrevista);
         });
       } else {
         items.sort(function(a, b) {
@@ -1754,7 +1754,7 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return !i.dataPrelievo; });
         items.sort(function(a, b) {
-          return parseDateDMY_(b.dataSpedizioneCliente) - parseDateDMY_(a.dataSpedizioneCliente);
+          return parseDateDMY_(a.dataSpedizioneCliente) - parseDateDMY_(b.dataSpedizioneCliente);
         });
         _prelWaitingItems = items;
         _prelWaitingVisible = 5;
@@ -1795,7 +1795,7 @@
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
         items.sort(function(a, b) {
-          return parseDateDMY_(b.dataConsegnaPrevista) - parseDateDMY_(a.dataConsegnaPrevista);
+          return parseDateDMY_(a.dataConsegnaPrevista) - parseDateDMY_(b.dataConsegnaPrevista);
         });
         _ricWaitingItems = items;
         _ricWaitingVisible = 5;
