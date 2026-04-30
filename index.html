@@ -258,6 +258,30 @@
     }
     .btn-reset:hover:not(:disabled) { background: var(--hover-row); }
 
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-primary);
+      border-color: var(--border);
+      font-size: 14px;
+      padding: 10px 16px;
+      min-height: 40px;
+      width: auto;
+    }
+    .btn-secondary:hover:not(:disabled) { background: var(--hover-row); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 20px;
+      font-size: 14px;
+    }
+    .empty-state.error { color: var(--error-text); }
+
+    .show-more-row {
+      text-align: center;
+      padding: 12px 0;
+    }
+
     .toast {
       position: fixed;
       bottom: 90px;
@@ -679,14 +703,14 @@
       <div class="card" id="prel-waiting-card">
         <div class="card-title">In attesa di prelievo</div>
         <div id="prel-waiting-list">
-          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+          <div class="empty-state">Caricamento...</div>
         </div>
       </div>
 
       <div class="card" id="prel-log-card">
         <div class="card-title">Ultimi prelievi</div>
         <div id="prel-session-log">
-          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+          <div class="empty-state">Caricamento...</div>
         </div>
       </div>
     </div>
@@ -712,14 +736,14 @@
       <div class="card" id="ric-waiting-card">
         <div class="card-title">In attesa di ricezione</div>
         <div id="ric-waiting-list">
-          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+          <div class="empty-state">Caricamento...</div>
         </div>
       </div>
 
       <div class="card" id="ric-log-card">
         <div class="card-title">Ultime ricezioni</div>
         <div id="ric-session-log">
-          <div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>
+          <div class="empty-state">Caricamento...</div>
         </div>
       </div>
     </div>
@@ -750,9 +774,7 @@
       <div class="card">
         <div class="card-title">Ultime attivit&agrave;</div>
         <div id="activity-log">
-          <div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:14px;">
-            Caricamento...
-          </div>
+          <div class="empty-state">Caricamento...</div>
         </div>
       </div>
 
@@ -826,18 +848,40 @@
 
     const state = { currentPhase: 'registrazione' };
 
+    const PHASE_ABBR = { prelievo: 'prel', ricezione: 'ric' };
+    const PAGE_SIZE = 5;
+
+    // Code 128: Berloni usa codici tipo "AAA-NNNN" o simili — almeno un trattino + alfanumerici.
+    // Filtriamo qui per scartare letture spurie con caratteri di controllo Code 128.
+    const BARCODE_REGEX = /^[A-Z0-9][A-Z0-9\-]{6,}$/;
+    function isValidBarcode(code) {
+      var c = String(code || '').trim();
+      return BARCODE_REGEX.test(c) && c.indexOf('-') !== -1;
+    }
+
+    function phaseEl(phase, suffix) {
+      return document.getElementById(PHASE_ABBR[phase] + suffix);
+    }
+
+    function loadingHtml() { return '<div class="empty-state">Caricamento...</div>'; }
+    function errorHtml(msg) { return '<div class="empty-state error">' + (msg || 'Errore caricamento') + '</div>'; }
+    function emptyHtml(msg) { return '<div class="empty-state">' + (msg || '') + '</div>'; }
+    function showMoreHtml(handler) {
+      return '<div class="show-more-row"><button class="btn btn-secondary" onclick="' + handler + '">Mostra altro</button></div>';
+    }
+
     var _monitorData = { daPrelevare: [], daBollettare: [], daRicevere: [] };
-    var _monitorDetailVisible = 5;
+    var _monitorDetailVisible = PAGE_SIZE;
     var _activityItems = [];
-    var _activityVisible = 5;
+    var _activityVisible = PAGE_SIZE;
     var _prelWaitingItems = [];
-    var _prelWaitingVisible = 5;
+    var _prelWaitingVisible = PAGE_SIZE;
     var _prelStoricoItems = [];
-    var _prelStoricoVisible = 5;
+    var _prelStoricoVisible = PAGE_SIZE;
     var _ricWaitingItems = [];
-    var _ricWaitingVisible = 5;
+    var _ricWaitingVisible = PAGE_SIZE;
     var _ricStoricoItems = [];
-    var _ricStoricoVisible = 5;
+    var _ricStoricoVisible = PAGE_SIZE;
     var _successOverlayTimer = null;
 
     function formatDateOnly(dateStr) {
@@ -851,10 +895,6 @@
       if (p.length >= 3) return new Date(+p[2], +p[1] - 1, +p[0]).getTime();
       return 0;
     }
-
-    const PHASE_ABBR = { prelievo: 'prel', ricezione: 'ric' };
-    const buttonMap  = { prelievo: 'prel-scan-btn',   ricezione: 'ric-scan-btn' };
-    const debugMap   = { prelievo: 'prel-scan-debug', ricezione: 'ric-scan-debug' };
 
     async function ensureZXingLoaded() {
       if (window.ZXing) return true;
@@ -1123,8 +1163,8 @@
       var qLoaded = await ensureQuaggaLoaded();
       if (!qLoaded) { capturePhotoForRegField(field); return; }
       _scanCallback = function(code) {
-        var cleanCode = String(code).trim();
-        if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+        var cleanCode = String(code || '').trim();
+        if (!isValidBarcode(cleanCode)) {
           showToast('Codice non riconosciuto — riprova', 'warning'); return;
         }
         var fieldEl = document.getElementById('reg-' + field);
@@ -1234,8 +1274,8 @@
       var file = inputEl.files && inputEl.files[0];
       if (!file) return;
 
-      var debugEl = document.getElementById(debugMap[phase]);
-      var btnEl   = document.getElementById(buttonMap[phase]);
+      var debugEl = phaseEl(phase, '-scan-debug');
+      var btnEl   = phaseEl(phase, '-scan-btn');
 
       function setDebug(msg, cls) {
         if (!debugEl) return;
@@ -1246,7 +1286,6 @@
       if (btnEl) btnEl.disabled = true;
       setDebug('Lettura codice a barre...', 'active');
 
-      var fileInfo = 'file=' + (file.type || '?') + ' ' + Math.round((file.size || 0) / 1024) + 'KB';
       var canvas = null;
 
       try {
@@ -1281,11 +1320,9 @@
       var cleanCode = String(code || '').trim();
       if (!cleanCode) return;
 
-      // Rifiuta codici con caratteri non validi (=, ;, <, :, ! ecc.)
-      // causati da errori di charset Code 128 — accetta solo [A-Z0-9-]
-      if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+      if (!isValidBarcode(cleanCode)) {
         console.warn('[Scan] Scartato: formato non valido:', cleanCode);
-        var dbg = document.getElementById(debugMap[phase]);
+        var dbg = phaseEl(phase, '-scan-debug');
         if (dbg) { dbg.textContent = 'Codice non valido — riprova'; dbg.className = 'scan-debug warn'; }
         showToast('Codice non riconosciuto — riprova', 'warning');
         return;
@@ -1324,7 +1361,6 @@
       if (btnEl) btnEl.disabled = true;
       setDebug('Lettura codice a barre...', 'active');
 
-      var fileInfo = 'file=' + (file.type || '?') + ' ' + Math.round((file.size || 0) / 1024) + 'KB';
       var canvas = null;
 
       try {
@@ -1340,7 +1376,7 @@
 
         if (result && result.code) {
           var cleanCode = String(result.code).trim();
-          if (!/^[A-Z0-9][A-Z0-9\-]{6,}$/.test(cleanCode) || cleanCode.indexOf('-') === -1) {
+          if (!isValidBarcode(cleanCode)) {
             setDebug('Codice non riconosciuto — riprova', 'warn');
             showToast('Codice non riconosciuto — riprova', 'warning');
           } else {
@@ -1471,23 +1507,23 @@
     // ================================================
     async function caricaStoricoPrelievi() {
       var container = document.getElementById('prel-session-log');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = loadingHtml();
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo; });
         items.sort(function(a, b) { return parseDateDMY_(b.dataPrelievo) - parseDateDMY_(a.dataPrelievo); });
         _prelStoricoItems = items;
-        _prelStoricoVisible = 5;
+        _prelStoricoVisible = PAGE_SIZE;
         renderStoricoPrelievi();
       } catch (err) {
-        document.getElementById('prel-session-log').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = errorHtml();
       }
     }
 
     function renderStoricoPrelievi() {
       var container = document.getElementById('prel-session-log');
       if (!_prelStoricoItems.length) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun prelievo recente</div>';
+        container.innerHTML = emptyHtml('Nessun prelievo recente');
         return;
       }
       var html = '';
@@ -1503,32 +1539,32 @@
         html += '</div>';
       });
       if (_prelStoricoVisible < _prelStoricoItems.length) {
-        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroStoricoPrelievi()">Mostra altro</button></div>';
+        html += showMoreHtml('mostraAltroStoricoPrelievi()');
       }
       container.innerHTML = html;
     }
 
-    function mostraAltroStoricoPrelievi() { _prelStoricoVisible += 5; renderStoricoPrelievi(); }
+    function mostraAltroStoricoPrelievi() { _prelStoricoVisible += PAGE_SIZE; renderStoricoPrelievi(); }
 
     async function caricaStoricoRicezioni() {
       var container = document.getElementById('ric-session-log');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = loadingHtml();
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataConsegnaEffettiva; });
         items.sort(function(a, b) { return parseDateDMY_(b.dataConsegnaEffettiva) - parseDateDMY_(a.dataConsegnaEffettiva); });
         _ricStoricoItems = items;
-        _ricStoricoVisible = 5;
+        _ricStoricoVisible = PAGE_SIZE;
         renderStoricoRicezioni();
       } catch (err) {
-        document.getElementById('ric-session-log').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = errorHtml();
       }
     }
 
     function renderStoricoRicezioni() {
       var container = document.getElementById('ric-session-log');
       if (!_ricStoricoItems.length) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna ricezione recente</div>';
+        container.innerHTML = emptyHtml('Nessuna ricezione recente');
         return;
       }
       var html = '';
@@ -1544,12 +1580,12 @@
         html += '</div>';
       });
       if (_ricStoricoVisible < _ricStoricoItems.length) {
-        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroStoricoRicezioni()">Mostra altro</button></div>';
+        html += showMoreHtml('mostraAltroStoricoRicezioni()');
       }
       container.innerHTML = html;
     }
 
-    function mostraAltroStoricoRicezioni() { _ricStoricoVisible += 5; renderStoricoRicezioni(); }
+    function mostraAltroStoricoRicezioni() { _ricStoricoVisible += PAGE_SIZE; renderStoricoRicezioni(); }
 
     function chiediAnnullaPrelievo(odv) {
       if (!confirm('Annullare il prelievo di ODV: ' + odv + '?')) return;
@@ -1613,24 +1649,22 @@
         _monitorData = { daPrelevare: daPrelevare, daBollettare: daBollettare, daRicevere: daRicevere };
 
         _activityItems = items;
-        _activityVisible = 5;
+        _activityVisible = PAGE_SIZE;
         renderActivityLog();
       } catch (err) {
         console.error(err);
-        document.getElementById('activity-log').innerHTML =
-          '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        document.getElementById('activity-log').innerHTML = errorHtml();
       }
     }
 
     function renderActivityLog() {
       var container = document.getElementById('activity-log');
       if (!_activityItems.length) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessuna registrazione</div>';
+        container.innerHTML = emptyHtml('Nessuna registrazione');
         return;
       }
-      var visible = _activityItems.slice(0, _activityVisible);
       var html = '';
-      visible.forEach(function(item) {
+      _activityItems.slice(0, _activityVisible).forEach(function(item) {
         var statoClass = String(item.stato || '').toLowerCase();
         html += '<div class="log-item">';
         html += '<div class="log-dot ' + statoClass + '"></div>';
@@ -1642,15 +1676,13 @@
         html += '</div>';
       });
       if (_activityVisible < _activityItems.length) {
-        html += '<div style="text-align:center;padding:12px 0;">';
-        html += '<button class="btn btn-secondary" onclick="mostraAltroActivity()">Mostra altro</button>';
-        html += '</div>';
+        html += showMoreHtml('mostraAltroActivity()');
       }
       container.innerHTML = html;
     }
 
     function mostraAltroActivity() {
-      _activityVisible += 5;
+      _activityVisible += PAGE_SIZE;
       renderActivityLog();
     }
 
@@ -1668,7 +1700,7 @@
       titleEl.textContent = labels[tipo] || tipo;
       panel.dataset.tipo = tipo;
 
-      _monitorDetailVisible = 5;
+      _monitorDetailVisible = PAGE_SIZE;
       renderMonitorDetail();
       panel.style.display = 'block';
     }
@@ -1697,7 +1729,7 @@
       }
 
       if (!items.length) {
-        listEl.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV</div>';
+        listEl.innerHTML = emptyHtml('Nessun ODV');
         return;
       }
 
@@ -1719,12 +1751,12 @@
         html += '</div>';
       });
       if (_monitorDetailVisible < items.length) {
-        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroMonitorDetail()">Mostra altro</button></div>';
+        html += showMoreHtml('mostraAltroMonitorDetail()');
       }
       listEl.innerHTML = html;
     }
 
-    function mostraAltroMonitorDetail() { _monitorDetailVisible += 5; renderMonitorDetail(); }
+    function mostraAltroMonitorDetail() { _monitorDetailVisible += PAGE_SIZE; renderMonitorDetail(); }
 
     // ================================================
     // UTILITIES
@@ -1749,7 +1781,7 @@
 
     async function caricaOdvInAttesaPrelievo() {
       var container = document.getElementById('prel-waiting-list');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = loadingHtml();
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return !i.dataPrelievo; });
@@ -1757,17 +1789,17 @@
           return parseDateDMY_(a.dataSpedizioneCliente) - parseDateDMY_(b.dataSpedizioneCliente);
         });
         _prelWaitingItems = items;
-        _prelWaitingVisible = 5;
+        _prelWaitingVisible = PAGE_SIZE;
         renderAttesaPrelievo();
       } catch (err) {
-        document.getElementById('prel-waiting-list').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = errorHtml();
       }
     }
 
     function renderAttesaPrelievo() {
       var container = document.getElementById('prel-waiting-list');
       if (!_prelWaitingItems.length) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+        container.innerHTML = emptyHtml('Nessun ODV in attesa');
         return;
       }
       var html = '';
@@ -1781,16 +1813,16 @@
         html += '</div>';
       });
       if (_prelWaitingVisible < _prelWaitingItems.length) {
-        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroAttesaPrelievo()">Mostra altro</button></div>';
+        html += showMoreHtml('mostraAltroAttesaPrelievo()');
       }
       container.innerHTML = html;
     }
 
-    function mostraAltroAttesaPrelievo() { _prelWaitingVisible += 5; renderAttesaPrelievo(); }
+    function mostraAltroAttesaPrelievo() { _prelWaitingVisible += PAGE_SIZE; renderAttesaPrelievo(); }
 
     async function caricaOdvInAttesaRicezione() {
       var container = document.getElementById('ric-waiting-list');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Caricamento...</div>';
+      container.innerHTML = loadingHtml();
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
         var items = (result.data || []).filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
@@ -1798,17 +1830,17 @@
           return parseDateDMY_(a.dataConsegnaPrevista) - parseDateDMY_(b.dataConsegnaPrevista);
         });
         _ricWaitingItems = items;
-        _ricWaitingVisible = 5;
+        _ricWaitingVisible = PAGE_SIZE;
         renderAttesaRicezione();
       } catch (err) {
-        document.getElementById('ric-waiting-list').innerHTML = '<div style="text-align:center;color:var(--error-text);padding:20px;font-size:14px;">Errore caricamento</div>';
+        container.innerHTML = errorHtml();
       }
     }
 
     function renderAttesaRicezione() {
       var container = document.getElementById('ric-waiting-list');
       if (!_ricWaitingItems.length) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nessun ODV in attesa</div>';
+        container.innerHTML = emptyHtml('Nessun ODV in attesa');
         return;
       }
       var html = '';
@@ -1823,12 +1855,12 @@
         html += '</div>';
       });
       if (_ricWaitingVisible < _ricWaitingItems.length) {
-        html += '<div style="text-align:center;padding:12px 0;"><button class="btn btn-secondary" onclick="mostraAltroAttesaRicezione()">Mostra altro</button></div>';
+        html += showMoreHtml('mostraAltroAttesaRicezione()');
       }
       container.innerHTML = html;
     }
 
-    function mostraAltroAttesaRicezione() { _ricWaitingVisible += 5; renderAttesaRicezione(); }
+    function mostraAltroAttesaRicezione() { _ricWaitingVisible += PAGE_SIZE; renderAttesaRicezione(); }
 
     function showToast(message, type) {
       var toast = document.getElementById('toast');
