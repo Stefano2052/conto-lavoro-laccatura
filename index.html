@@ -416,6 +416,10 @@
 
     .log-dot.aperto { background: var(--primary); }
     .log-dot.chiuso { background: var(--success-text); }
+    .log-dot.nuovo      { background: var(--primary); }
+    .log-dot.prelevato  { background: var(--success-text); }
+    .log-dot.bollettato { background: var(--info-text); }
+    .log-dot.ricevuto   { background: var(--text-secondary); }
 
     .log-info { flex: 1; min-width: 0; }
 
@@ -442,6 +446,10 @@
 
     .log-stato.aperto { background: var(--success-bg); color: var(--success-text); }
     .log-stato.chiuso { background: var(--section-bg); color: var(--text-secondary); }
+    .log-stato.nuovo      { background: var(--selected-bg); color: var(--primary-dark); }
+    .log-stato.prelevato  { background: var(--success-bg);  color: var(--success-text); }
+    .log-stato.bollettato { background: var(--info-bg);     color: var(--info-text); }
+    .log-stato.ricevuto   { background: var(--section-bg);  color: var(--text-secondary); }
 
     .field-input-row {
       display: flex;
@@ -892,7 +900,13 @@
     function parseDateDMY_(s) {
       if (!s) return 0;
       var p = String(s).split(/[\/\s:]/);
-      if (p.length >= 3) return new Date(+p[2], +p[1] - 1, +p[0]).getTime();
+      if (p.length >= 3) {
+        var y = +p[2];
+        if (y < 100) y += 2000;
+        var h = p.length >= 4 ? +p[3] : 0;
+        var m = p.length >= 5 ? +p[4] : 0;
+        return new Date(y, +p[1] - 1, +p[0], h, m).getTime();
+      }
       return 0;
     }
 
@@ -1648,13 +1662,42 @@
 
         _monitorData = { daPrelevare: daPrelevare, daBollettare: daBollettare, daRicevere: daRicevere };
 
-        _activityItems = items;
+        _activityItems = buildActivityEvents(items);
         _activityVisible = PAGE_SIZE;
         renderActivityLog();
       } catch (err) {
         console.error(err);
         document.getElementById('activity-log').innerHTML = errorHtml();
       }
+    }
+
+    var ACTIVITY_EVENTS = [
+      { key: 'dataInserimento',       label: 'Nuovo',      cls: 'nuovo' },
+      { key: 'dataPrelievo',          label: 'Prelevato',  cls: 'prelevato' },
+      { key: 'dataEmissioneBolla',    label: 'Bollettato', cls: 'bollettato' },
+      { key: 'dataConsegnaEffettiva', label: 'Ricevuto',   cls: 'ricevuto' }
+    ];
+
+    function buildActivityEvents(items) {
+      var out = [];
+      items.forEach(function(item) {
+        ACTIVITY_EVENTS.forEach(function(ev) {
+          var d = item[ev.key];
+          var ts = parseDateDMY_(d);
+          if (d && ts) {
+            out.push({
+              odv: item.odv,
+              cl: item.cl,
+              evento: ev.label,
+              eventoCls: ev.cls,
+              data: d,
+              ts: ts
+            });
+          }
+        });
+      });
+      out.sort(function(a, b) { return b.ts - a.ts; });
+      return out;
     }
 
     function renderActivityLog() {
@@ -1665,14 +1708,13 @@
       }
       var html = '';
       _activityItems.slice(0, _activityVisible).forEach(function(item) {
-        var statoClass = String(item.stato || '').toLowerCase();
         html += '<div class="log-item">';
-        html += '<div class="log-dot ' + statoClass + '"></div>';
+        html += '<div class="log-dot ' + item.eventoCls + '"></div>';
         html += '<div class="log-info">';
         html += '<div class="log-codes" style="display:flex;justify-content:space-between;gap:8px;"><span>' + escapeHtml(item.odv || '') + '</span><span>' + escapeHtml(item.cl || '') + '</span></div>';
-        html += '<div class="log-date">Consegna prevista: ' + formatDateOnly(item.dataConsegnaPrevista) + '</div>';
+        html += '<div class="log-date">' + escapeHtml(item.data) + '</div>';
         html += '</div>';
-        html += '<div class="log-stato ' + statoClass + '">' + escapeHtml(item.stato || '') + '</div>';
+        html += '<div class="log-stato ' + item.eventoCls + '">' + escapeHtml(item.evento) + '</div>';
         html += '</div>';
       });
       if (_activityVisible < _activityItems.length) {
