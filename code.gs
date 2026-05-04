@@ -16,7 +16,7 @@ var SHEET_NAME = 'Database';
 // F: Data emissione bolla (compilata manualmente sul foglio)
 // G: Data consegna prevista (FORMULA sul foglio — mai scritta/cancellata dal codice)
 // H: Data consegna effettiva
-// I: Stato (APERTO / CHIUSO)
+// I: Stato (FORMULA sul foglio — mai scritta/cancellata dal codice)
 
 // ============================================================
 // API WEB
@@ -123,12 +123,12 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
       }
     }
 
-    // I — copia la formula dalla riga precedente se esiste, altrimenti scrive 'APERTO'
-    var formulaI = (prevRow >= 2) ? sheet.getRange(prevRow, 9).getFormula() : '';
-    if (formulaI) {
-      sheet.getRange(prevRow, 9).copyTo(sheet.getRange(nextRow, 9), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
-    } else {
-      sheet.getRange(nextRow, 9).setValue('APERTO');
+    // I — copia la formula dalla riga precedente se esiste
+    if (prevRow >= 2) {
+      var srcI = sheet.getRange(prevRow, 9);
+      if (srcI.getFormula()) {
+        srcI.copyTo(sheet.getRange(nextRow, 9), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+      }
     }
 
     return { success: true, message: 'Registrazione completata', data: { odv: codiceODV, cl: codiceCL, dataSpedizioneCliente: dataSpedizioneFormattata } };
@@ -189,8 +189,7 @@ function registraRicezione(codiceODV) {
     }
 
     var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
-    sheet.getRange(riga, 8).setValue(now);      // H: Data consegna effettiva
-    sheet.getRange(riga, 9).setValue('CHIUSO'); // I: Stato
+    sheet.getRange(riga, 8).setValue(now); // H: Data consegna effettiva
 
     var codiceCL = cleanString_(sheet.getRange(riga, 2).getValue());
 
@@ -215,8 +214,7 @@ function annullaPrelievo(codiceODV) {
       return { success: false, message: 'ODV "' + codiceODV + '" è già chiuso: annulla prima la ricezione.', type: 'already_done' };
     }
 
-    sheet.getRange(riga, 5).setValue('');       // E: Data prelievo effettivo
-    sheet.getRange(riga, 9).setValue('APERTO'); // I: Stato (G non si tocca: formula)
+    sheet.getRange(riga, 5).setValue(''); // E: Data prelievo effettivo
 
     return { success: true, message: 'Prelievo annullato', data: { odv: codiceODV } };
 
@@ -239,8 +237,7 @@ function annullaRicezione(codiceODV) {
       return { success: false, message: 'ODV "' + codiceODV + '" non risulta chiuso.', type: 'not_ready' };
     }
 
-    sheet.getRange(riga, 8).setValue('');       // H: Data consegna effettiva
-    sheet.getRange(riga, 9).setValue('APERTO'); // I: Stato
+    sheet.getRange(riga, 8).setValue(''); // H: Data consegna effettiva
 
     return { success: true, message: 'Ricezione annullata', data: { odv: codiceODV } };
 
