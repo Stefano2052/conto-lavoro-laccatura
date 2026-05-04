@@ -99,9 +99,21 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
 
     var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
     var dataSpedizioneFormattata = formatDateForDisplay_(dataSpedizioneCliente);
-    var nextRow = sheet.getLastRow() + 1;
+    var lastRow = sheet.getLastRow();
+    var nextRow = lastRow + 1;
 
-    // A — F (saltiamo G: contiene la formula sul foglio)
+    // Leggi le formule di G e I PRIMA di scrivere, cercando all'indietro
+    var formulaG = '', rigaG = 0, formulaI = '', rigaI = 0;
+    if (lastRow >= 2) {
+      var formule = sheet.getRange(2, 7, lastRow - 1, 3).getFormulas(); // colonne G(0), H(1), I(2)
+      for (var i = formule.length - 1; i >= 0; i--) {
+        if (!formulaG && formule[i][0]) { formulaG = formule[i][0]; rigaG = i + 2; }
+        if (!formulaI && formule[i][2]) { formulaI = formule[i][2]; rigaI = i + 2; }
+        if (formulaG && formulaI) break;
+      }
+    }
+
+    // A — F
     sheet.getRange(nextRow, 1, 1, 6).setValues([[
       codiceODV,                 // A — ODV
       codiceCL,                  // B — CL
@@ -114,14 +126,12 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
     // H — Data consegna effettiva (vuota)
     sheet.getRange(nextRow, 8).setValue('');
 
-    // G e I — copia la formula cercando all'indietro la prima riga che ce l'ha
-    var rigaG = trovaPrimaRigaConFormula_(sheet, 7, nextRow - 1);
-    if (rigaG > 0) {
-      sheet.getRange(rigaG, 7).copyTo(sheet.getRange(nextRow, 7), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+    // G e I — scrivi la formula adattando il numero di riga
+    if (formulaG) {
+      sheet.getRange(nextRow, 7).setFormula(adattaRiga_(formulaG, rigaG, nextRow));
     }
-    var rigaI = trovaPrimaRigaConFormula_(sheet, 9, nextRow - 1);
-    if (rigaI > 0) {
-      sheet.getRange(rigaI, 9).copyTo(sheet.getRange(nextRow, 9), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+    if (formulaI) {
+      sheet.getRange(nextRow, 9).setFormula(adattaRiga_(formulaI, rigaI, nextRow));
     }
 
     return { success: true, message: 'Registrazione completata', data: { odv: codiceODV, cl: codiceCL, dataSpedizioneCliente: dataSpedizioneFormattata } };
@@ -283,11 +293,12 @@ function getUltimeRegistrazioni(n) {
 // HELPER
 // ============================================================
 
-function trovaPrimaRigaConFormula_(sheet, colonna, daRiga) {
-  for (var r = daRiga; r >= 2; r--) {
-    if (sheet.getRange(r, colonna).getFormula()) return r;
-  }
-  return 0;
+// Sostituisce i riferimenti di riga (es. D5 → D8) nella formula sorgente
+function adattaRiga_(formula, rigaSorgente, rigaDest) {
+  var diff = rigaDest - rigaSorgente;
+  return formula.replace(/([A-Z]+)(\d+)/g, function(_, col, row) {
+    return col + (parseInt(row) + diff);
+  });
 }
 
 function getSheet() {
