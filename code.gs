@@ -99,19 +99,7 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
 
     var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
     var dataSpedizioneFormattata = formatDateForDisplay_(dataSpedizioneCliente);
-    var lastRow = sheet.getLastRow();
-    var nextRow = lastRow + 1;
-
-    // Leggi le formule di G e I PRIMA di scrivere, cercando all'indietro
-    var formulaG = '', rigaG = 0, formulaI = '', rigaI = 0;
-    if (lastRow >= 2) {
-      var formule = sheet.getRange(2, 7, lastRow - 1, 3).getFormulas(); // colonne G(0), H(1), I(2)
-      for (var i = formule.length - 1; i >= 0; i--) {
-        if (!formulaG && formule[i][0]) { formulaG = formule[i][0]; rigaG = i + 2; }
-        if (!formulaI && formule[i][2]) { formulaI = formule[i][2]; rigaI = i + 2; }
-        if (formulaG && formulaI) break;
-      }
-    }
+    var nextRow = sheet.getLastRow() + 1;
 
     // A — F
     sheet.getRange(nextRow, 1, 1, 6).setValues([[
@@ -126,12 +114,14 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
     // H — Data consegna effettiva (vuota)
     sheet.getRange(nextRow, 8).setValue('');
 
-    // G e I — scrivi la formula adattando il numero di riga
-    if (formulaG) {
-      sheet.getRange(nextRow, 7).setFormula(adattaRiga_(formulaG, rigaG, nextRow));
-    }
-    if (formulaI) {
-      sheet.getRange(nextRow, 9).setFormula(adattaRiga_(formulaI, rigaI, nextRow));
+    // G e I — copia la formula dalla riga precedente con copyTo (gestisce locale e riferimenti nativamente)
+    if (nextRow > 2) {
+      sheet.getRange(nextRow - 1, 7).copyTo(
+        sheet.getRange(nextRow, 7), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false
+      );
+      sheet.getRange(nextRow - 1, 9).copyTo(
+        sheet.getRange(nextRow, 9), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false
+      );
     }
 
     return { success: true, message: 'Registrazione completata', data: { odv: codiceODV, cl: codiceCL, dataSpedizioneCliente: dataSpedizioneFormattata } };
@@ -292,14 +282,6 @@ function getUltimeRegistrazioni(n) {
 // ============================================================
 // HELPER
 // ============================================================
-
-// Sostituisce i riferimenti di riga (es. D5 → D8) nella formula sorgente
-function adattaRiga_(formula, rigaSorgente, rigaDest) {
-  var diff = rigaDest - rigaSorgente;
-  return formula.replace(/([A-Z]+)(\d+)/g, function(_, col, row) {
-    return col + (parseInt(row) + diff);
-  });
-}
 
 function getSheet() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
