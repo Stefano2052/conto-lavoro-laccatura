@@ -1867,7 +1867,7 @@
       container.innerHTML = loadingHtml();
       try {
         var result = await apiCall('getUltimeRegistrazioni', { n: 500 });
-        var items = (result.data || []).filter(function(i) { return i.dataPrelievo && !i.dataConsegnaEffettiva; });
+        var items = (result.data || []).filter(function(i) { return i.dataPrelievo && i.dataConsegnaPrevista && !i.dataConsegnaEffettiva; });
         items.sort(function(a, b) {
           return parseDateDMY_(a.dataConsegnaPrevista) - parseDateDMY_(b.dataConsegnaPrevista);
         });
