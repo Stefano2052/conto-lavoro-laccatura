@@ -14,7 +14,7 @@ var SHEET_NAME = 'Database';
 // D: Data di spedizione al cliente
 // E: Data prelievo effettivo
 // F: Data emissione bolla (compilata manualmente sul foglio)
-// G: Data consegna prevista (calcolata: prelievo + 10 gg lavorativi)
+// G: Data consegna prevista (FORMULA sul foglio — mai scritta/cancellata dal codice)
 // H: Data consegna effettiva
 // I: Stato (APERTO / CHIUSO)
 
@@ -101,14 +101,18 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
     var dataSpedizioneFormattata = formatDateForDisplay_(dataSpedizioneCliente);
     var nextRow = sheet.getLastRow() + 1;
 
-    sheet.getRange(nextRow, 1, 1, 9).setValues([[
+    // A — F (saltiamo G: contiene la formula sul foglio)
+    sheet.getRange(nextRow, 1, 1, 6).setValues([[
       codiceODV,                 // A — ODV
       codiceCL,                  // B — CL
       now,                       // C — Data inserimento
       dataSpedizioneFormattata,  // D — Data di spedizione al cliente
       '',                        // E — Data prelievo effettivo
-      '',                        // F — Data emissione bolla (manuale)
-      '',                        // G — Data consegna prevista (calcolata al prelievo)
+      ''                         // F — Data emissione bolla (manuale)
+    ]]);
+
+    // H — I (saltiamo G)
+    sheet.getRange(nextRow, 8, 1, 2).setValues([[
       '',                        // H — Data consegna effettiva
       'APERTO'                   // I — Stato
     ]]);
@@ -137,9 +141,9 @@ function registraPrelievo(codiceODV) {
     var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
     sheet.getRange(riga, 5).setValue(now); // E: Data prelievo effettivo
 
-    var dataConsegnaPrevista = addWorkingDays_(new Date(), 10);
-    var dataConsegnaPrevistaFormatted = Utilities.formatDate(dataConsegnaPrevista, Session.getScriptTimeZone(), 'dd/MM/yyyy');
-    sheet.getRange(riga, 7).setValue(dataConsegnaPrevistaFormatted); // G: Data consegna prevista
+    // G è una formula sul foglio: la rileggiamo dopo flush per restituirla al client.
+    SpreadsheetApp.flush();
+    var dataConsegnaPrevistaFormatted = readDateCellAsDayMonthYear_(sheet.getRange(riga, 7).getValue());
 
     var codiceCL = cleanString_(sheet.getRange(riga, 2).getValue());
 
@@ -197,9 +201,8 @@ function annullaPrelievo(codiceODV) {
       return { success: false, message: 'ODV "' + codiceODV + '" è già chiuso: annulla prima la ricezione.', type: 'already_done' };
     }
 
-    sheet.getRange(riga, 5).setValue(''); // E: Data prelievo effettivo
-    sheet.getRange(riga, 7).setValue(''); // G: Data consegna prevista
-    sheet.getRange(riga, 9).setValue('APERTO');
+    sheet.getRange(riga, 5).setValue('');       // E: Data prelievo effettivo
+    sheet.getRange(riga, 9).setValue('APERTO'); // I: Stato (G non si tocca: formula)
 
     return { success: true, message: 'Prelievo annullato', data: { odv: codiceODV } };
 
@@ -216,6 +219,11 @@ function annullaRicezione(codiceODV) {
     var sheet = getSheet();
     var riga = cercaRigaODV(codiceODV);
     if (riga === 0) return { success: false, message: 'ODV "' + codiceODV + '" non trovato.', type: 'not_found' };
+
+    var statoAttuale = cleanString_(sheet.getRange(riga, 9).getValue());
+    if (statoAttuale !== 'CHIUSO') {
+      return { success: false, message: 'ODV "' + codiceODV + '" non risulta chiuso.', type: 'not_ready' };
+    }
 
     sheet.getRange(riga, 8).setValue('');       // H: Data consegna effettiva
     sheet.getRange(riga, 9).setValue('APERTO'); // I: Stato
@@ -255,7 +263,7 @@ function getUltimeRegistrazioni(n) {
         dataSpedizioneCliente: formatCellValue_(data[i][3]),  // D
         dataPrelievo:          formatCellValue_(data[i][4]),  // E
         dataEmissioneBolla:    formatCellValue_(data[i][5]),  // F
-        dataConsegnaPrevista:  formatCellValue_(data[i][6]),  // G
+        dataConsegnaPrevista:  formatCellValue_(data[i][6]),  // G (formula)
         dataConsegnaEffettiva: formatCellValue_(data[i][7]),  // H
         stato:                 statoDisplay
       });
@@ -290,17 +298,6 @@ function cercaRigaODV(codiceODV) {
   return 0;
 }
 
-function addWorkingDays_(baseDate, numDays) {
-  var date = new Date(baseDate.getTime());
-  var added = 0;
-  while (added < numDays) {
-    date.setDate(date.getDate() + 1);
-    var day = date.getDay();
-    if (day !== 0 && day !== 6) added++;
-  }
-  return date;
-}
-
 function formatDateForDisplay_(dateStr) {
   if (!dateStr) return '';
   var parts = String(dateStr).split('-');
@@ -317,6 +314,14 @@ function formatCellValue_(value) {
   if (value === null || value === undefined || value === '') return '';
   if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
     return Utilities.formatDate(value, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  }
+  return String(value);
+}
+
+function readDateCellAsDayMonthYear_(value) {
+  if (value === null || value === undefined || value === '') return '';
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'dd/MM/yyyy');
   }
   return String(value);
 }
