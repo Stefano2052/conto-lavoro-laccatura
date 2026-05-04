@@ -111,11 +111,25 @@ function registraODV(codiceODV, codiceCL, dataSpedizioneCliente) {
       ''                         // F — Data emissione bolla (manuale)
     ]]);
 
-    // H — I (saltiamo G)
-    sheet.getRange(nextRow, 8, 1, 2).setValues([[
-      '',                        // H — Data consegna effettiva
-      'APERTO'                   // I — Stato
-    ]]);
+    // H — Data consegna effettiva (vuota)
+    sheet.getRange(nextRow, 8).setValue('');
+
+    // G — copia la formula dalla riga precedente se esiste, altrimenti lascia vuota
+    var prevRow = nextRow - 1;
+    if (prevRow >= 2) {
+      var srcG = sheet.getRange(prevRow, 7);
+      if (srcG.getFormula()) {
+        srcG.copyTo(sheet.getRange(nextRow, 7), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+      }
+    }
+
+    // I — copia la formula dalla riga precedente se esiste, altrimenti scrive 'APERTO'
+    var formulaI = (prevRow >= 2) ? sheet.getRange(prevRow, 9).getFormula() : '';
+    if (formulaI) {
+      sheet.getRange(prevRow, 9).copyTo(sheet.getRange(nextRow, 9), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+    } else {
+      sheet.getRange(nextRow, 9).setValue('APERTO');
+    }
 
     return { success: true, message: 'Registrazione completata', data: { odv: codiceODV, cl: codiceCL, dataSpedizioneCliente: dataSpedizioneFormattata } };
 
